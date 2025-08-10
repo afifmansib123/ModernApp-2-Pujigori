@@ -30,7 +30,7 @@
    mkdir -p src/{config,models,services,types,utils,controllers,routes,middleware,tests}
    mkdir -p dist logs uploads docs
 
-### Commit 2 : Core Files Setup (To Do)
+### Commit 2 : DataBase Models , Serices & App, index.ts.
 
 1. **Create Core Type Definitions**
    - Copy `src/types/index.ts` with all interfaces and enums
@@ -38,7 +38,7 @@
 2. **Create Database Configuration**
    - Copy `src/config/database.ts` with MongoDB connection management
 
-3. **Create Database Models**
+3. **Create Database Models** (Advanced Databse options explained at advancedModel.md)
    - Copy `src/models/Project.ts`
    - Copy `src/models/Donation.ts`
    - Copy `src/models/PaymentRequest.ts`
@@ -55,7 +55,7 @@
    - Copy `src/app.ts`
    - Copy `src/index.ts`
 
-### Step 3: Environment Configuration
+### Step 3: Environment Configuration (To do)
 
 1. **Create Environment File**
    ```bash

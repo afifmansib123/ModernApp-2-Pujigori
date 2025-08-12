@@ -55,7 +55,7 @@
    - Copy `src/app.ts`
    - Copy `src/index.ts`
 
-### Step 3: Environment Configuration (To do)
+### Commit 3: Environment Configuration (To do)
 
 1. **Create Environment File**
    ```bash
@@ -85,23 +85,13 @@
    FRONTEND_URL=http://localhost:3000
    ```
 
-### Step 4: External Services Setup
+### Commit 4: External Services Setup
 
 #### MongoDB Setup
 1. **Install MongoDB locally** or **use MongoDB Atlas**
    ```bash
-   # For local installation (macOS)
-   brew install mongodb-community
-
-   # Start MongoDB
-   brew services start mongodb/brew/mongodb-community
+      normal mongodb uri connection
    ```
-
-2. **Or use MongoDB Atlas (Cloud)**
-   - Go to https://cloud.mongodb.com
-   - Create account and cluster
-   - Get connection string
-   - Update `MONGODB_URI` in .env
 
 #### AWS S3 Setup
 1. **Create S3 Bucket**

@@ -170,58 +170,15 @@
    curl http://localhost:5000/api/version
    ```
 
-### Step 6: Next Phase - Controllers and Routes
+### Commit 6: Next Phase - Controllers and Routes
 
 Now you're ready to implement the API endpoints. Here's what to create next:
 
 #### 1. Create Controllers (Priority 1)
 
 **src/controllers/ProjectController.ts**
-```typescript
-import { Request, Response, NextFunction } from 'express';
-import Project from '../models/Project';
-import { ResponseUtils } from '../utils';
 
-class ProjectController {
-  // GET /api/projects
-  async getProjects(req: Request, res: Response, next: NextFunction) {
-    try {
-      const projects = await Project.findActive();
-      res.json(ResponseUtils.success('Projects retrieved successfully', projects));
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  // POST /api/projects
-  async createProject(req: Request, res: Response, next: NextFunction) {
-    try {
-      const project = new Project(req.body);
-      await project.save();
-      res.status(201).json(ResponseUtils.success('Project created successfully', project));
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  // GET /api/projects/:slug
-  async getProject(req: Request, res: Response, next: NextFunction) {
-    try {
-      const project = await Project.findOne({ slug: req.params.slug });
-      if (!project) {
-        return res.status(404).json(ResponseUtils.error('Project not found'));
-      }
-      res.json(ResponseUtils.success('Project retrieved successfully', project));
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  // Add more methods: updateProject, deleteProject, etc.
-}
-
-export default new ProjectController();
-```
+Check the file and has nice controllers for all crud operations
 
 #### 2. Create Routes (Priority 1)
 

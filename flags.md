@@ -22,3 +22,5 @@
 2. updateProject api  ---> at controllers/projectController
 
 get creator id from the auth middleware.
+
+3. in DonationController -> getuserdonation , updateDonorMessage (needs authentication)

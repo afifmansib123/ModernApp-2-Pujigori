@@ -1,5 +1,5 @@
 import mongoose, { Schema } from 'mongoose';
-import { IDonation, PaymentStatus, RewardRedemptionStatus } from '../types';
+import { IDonation, IDonationModel, PaymentStatus, RewardRedemptionStatus } from '../types';
 
 // Donor Info Schema (for anonymous donations)
 const DonorInfoSchema = new Schema({
@@ -374,6 +374,6 @@ DonationSchema.statics.findPendingRewards = function() {
   }).sort({ createdAt: -1 });
 };
 
-const Donation = mongoose.model<IDonation>('Donation', DonationSchema);
+const Donation = mongoose.model<IDonation, IDonationModel>('Donation', DonationSchema);
 
 export default Donation;

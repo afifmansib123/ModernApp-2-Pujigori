@@ -1,4 +1,4 @@
-import { Document } from 'mongoose';
+import { Document , Model  } from 'mongoose';
 
 export enum ProjectStatus {
   DRAFT = 'draft',
@@ -139,6 +139,18 @@ export interface IDonation extends Document {
   };
   createdAt: Date;
   updatedAt: Date;
+  isSuccessful(): boolean;
+  isRefundable(): boolean;
+  canRedeemReward(): boolean;
+  redeemReward(): Promise<IDonation>;
+}
+
+export interface IDonationModel extends Model<IDonation> {
+  findByProject(projectId: string, status?: PaymentStatus): Promise<IDonation[]>;
+  findSuccessful(): Promise<IDonation[]>;
+  getTotalRaised(projectId: string): Promise<any[]>;
+  getStatistics(startDate?: Date, endDate?: Date): Promise<any[]>;
+  findPendingRewards(): Promise<IDonation[]>;
 }
 
 // Payment Request Interface (for creators to withdraw funds)

@@ -17,7 +17,7 @@ export enum ProjectCategory {
   COMMUNITY = 'community',
   BUSINESS = 'business',
   CHARITY = 'charity', 
-  OTHER = 'other'
+  OTHER = 'other',
 }
 
 export enum PaymentStatus {

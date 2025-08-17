@@ -127,6 +127,7 @@ export interface IDonation extends Document {
   qrCodeUrl?: string; // S3 URL for QR code image
   isAnonymous: boolean;
   message?: string; // Optional donor message
+  donorDisplayName?: string; // ADD THIS - Display name for donor (used in admin controller)
   donorInfo?: {
     name: string;
     email: string;
@@ -174,7 +175,25 @@ export interface IPaymentRequest extends Document {
   processedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
+  
+  // Instance methods
+  canBeApproved(): boolean;
+  canBeRejected(): boolean;
+  canBeMarkedAsPaid(): boolean;
+  approve(adminId: string, notes?: string): Promise<IPaymentRequest>;
+  reject(adminId: string, reason: string): Promise<IPaymentRequest>;
+  markAsPaid(adminId: string, notes?: string): Promise<IPaymentRequest>;
 }
+
+export interface IPaymentRequestModel extends Model<IPaymentRequest> {
+  getStatistics(startDate?: Date, endDate?: Date): Promise<any[]>;
+  getTotalAdminFees(startDate?: Date, endDate?: Date): Promise<any[]>; // ADD THIS
+  findPendingRequests(): Promise<IPaymentRequest[]>;
+  findByProject(projectId: string): Promise<IPaymentRequest[]>;
+  findByCreator(creatorId: string): Promise<IPaymentRequest[]>;
+}
+
+
 
 // SSLCommerz Payment Data Interface
 export interface ISSLCommerzPayment {

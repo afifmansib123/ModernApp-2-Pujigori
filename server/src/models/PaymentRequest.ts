@@ -1,5 +1,6 @@
-import mongoose, { Schema } from 'mongoose';
-import { IPaymentRequest, PaymentRequestStatus } from '../types';
+import mongoose, { Schema , model } from 'mongoose';
+import { IPaymentRequest, PaymentRequestStatus , IPaymentRequestModel } from '../types';
+
 
 // Bank Details Schema
 const BankDetailsSchema = new Schema({
@@ -343,6 +344,6 @@ PaymentRequestSchema.statics.getTotalAdminFees = function(startDate?: Date, endD
   ]);
 };
 
-const PaymentRequest = mongoose.model<IPaymentRequest>('PaymentRequest', PaymentRequestSchema);
+const PaymentRequest = model<IPaymentRequest, IPaymentRequestModel>('PaymentRequest', PaymentRequestSchema);
 
 export default PaymentRequest;

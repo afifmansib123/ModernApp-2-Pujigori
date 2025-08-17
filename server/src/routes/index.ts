@@ -4,6 +4,7 @@ import donationRoutes from './donations';
 import paymentRoutes from './payments';
 import adminRoutes from './admin';
 import uploadRoutes from './upload';
+import authRoutes from './auth';
 
 const router = Router();
 
@@ -14,6 +15,7 @@ router.get('/', (req, res) => {
     message: 'PujiGori Crowdfunding API v1',
     version: '1.0.0',
     endpoints: {
+      auth: '/api/auth',
       projects: '/api/projects',
       donations: '/api/donations',
       payments: '/api/payments',
@@ -26,6 +28,7 @@ router.get('/', (req, res) => {
 });
 
 // Mount route modules
+router.use('/auth', authRoutes);
 router.use('/projects', projectRoutes);
 router.use('/donations', donationRoutes);
 router.use('/payments', paymentRoutes);

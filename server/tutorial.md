@@ -170,17 +170,20 @@
    curl http://localhost:5000/api/version
    ```
 
-### Commit 6: Next Phase - Controllers and Routes
+### Commit 6.1: Next Phase - Controllers
 
 Now you're ready to implement the API endpoints. Here's what to create next:
 
 #### 1. Create Controllers (Priority 1)
 
 **src/controllers/ProjectController.ts**
+**src/controllers/DonationController.ts**
+**src/controllers/AdminController.ts**
+**src/controllers/UploadController.ts**
 
 Check the file and has nice controllers for all crud operations
 
-#### 2. Create Routes (Priority 1)
+### Commit 6.2: Next Phase -  Routes
 
 **src/routes/projects.ts**
 ```typescript

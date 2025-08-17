@@ -56,6 +56,7 @@ export interface IUser {
 // Reward Tier Interface
 export interface IRewardTier {
   _id?: string;
+  id?: string; 
   title: string;
   description: string;
   minimumAmount: number; // in BDT
@@ -64,6 +65,7 @@ export interface IRewardTier {
   estimatedDelivery: Date;
   isActive: boolean;
   items: string[]; // Array of reward items/benefits
+  
 }
 
 // Project Interface
@@ -96,6 +98,7 @@ export interface IProject extends Document {
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
+  canReceiveDonations(): boolean;
 }
 
 // Project Update Interface

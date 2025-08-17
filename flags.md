@@ -24,3 +24,5 @@
 get creator id from the auth middleware.
 
 3. in DonationController -> getuserdonation , updateDonorMessage (needs authentication)
+
+4. routes have auth routes and also non auth development dummy routes

@@ -6,12 +6,8 @@ import compression from 'compression';
 import { IApiResponse, IErrorResponse } from './types';
 import { ResponseUtils, LogUtils, ErrorUtils, EnvUtils } from './utils';
 
-// Import route handlers (we'll create these next)
-// import projectRoutes from './routes/projects';
-// import donationRoutes from './routes/donations';
-// import paymentRoutes from './routes/payments';
-// import adminRoutes from './routes/admin';
-// import uploadRoutes from './routes/upload';
+// Import route handlers
+import apiRoutes from "./routes"
 
 class App {
   public app: Application;
@@ -19,7 +15,7 @@ class App {
 
   constructor() {
     this.app = express();
-    this.port = parseInt(process.env.PORT || '5001', 10);
+    this.port = parseInt(process.env.PORT || '5000', 10);
 
     this.initializeMiddlewares();
     this.initializeRoutes();
@@ -153,12 +149,8 @@ class App {
       ));
     });
 
-    // API routes (uncomment when routes are created)
-    // this.app.use('/api/projects', projectRoutes);
-    // this.app.use('/api/donations', donationRoutes);
-    // this.app.use('/api/payments', paymentRoutes);
-    // this.app.use('/api/admin', adminRoutes);
-    // this.app.use('/api/upload', uploadRoutes);
+    // API routes
+    this.app.use('/api', apiRoutes);
 
     // 404 handler for unmatched routes
     this.app.use('*', this.notFoundHandler);

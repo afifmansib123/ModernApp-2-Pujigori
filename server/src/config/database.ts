@@ -127,25 +127,65 @@ class Database {
   }
 
   // Database utility methods
-  public async createIndexes(): Promise<void> {
-    try {
-      console.log('📊 Creating database indexes...');
-      
-      // Get all model names
-      const modelNames = mongoose.modelNames();
-      
-      for (const modelName of modelNames) {
+public async createIndexes(): Promise<void> {
+  try {
+    console.log('📊 Creating database indexes...');
+    
+    // Get all model names
+    const modelNames = mongoose.modelNames();
+    
+    for (const modelName of modelNames) {
+      try {
         const model = mongoose.model(modelName);
-        await model.createIndexes();
+        
+        // Try to sync indexes first
+        await model.syncIndexes();
         console.log(`✅ Indexes created for ${modelName} model`);
+        
+      } catch (error: any) {
+        if (error.code === 86) { // IndexKeySpecsConflict
+          console.log(`🔧 Fixing index conflicts for ${modelName}...`);
+          
+          try {
+            const model = mongoose.model(modelName);
+            
+            // Get existing indexes
+            const indexes = await model.collection.indexes();
+            
+            // Drop conflicting indexes (except _id)
+            for (const index of indexes) {
+              if (index.name !== '_id_') {
+                try {
+                  await model.collection.dropIndex(index.name);
+                  console.log(`   Dropped conflicting index: ${index.name}`);
+                } catch (dropError: any) {
+                  // Index might not exist, continue
+                  console.log(`   Could not drop index ${index.name}: ${dropError.message}`);
+                }
+              }
+            }
+            
+            // Now recreate indexes
+            await model.syncIndexes();
+            console.log(`   ✅ Recreated indexes for ${modelName}`);
+            
+          } catch (recreateError) {
+            console.warn(`   ⚠️  Could not recreate indexes for ${modelName}:`, recreateError);
+          }
+        } else {
+          // Log other errors but continue
+          console.warn(`⚠️  Index warning for ${modelName}:`, error.message);
+        }
       }
-      
-      console.log('📊 All database indexes created successfully');
-    } catch (error) {
-      console.error('❌ Error creating database indexes:', error);
-      throw error;
     }
+    
+    console.log('📊 Database indexes creation completed');
+  } catch (error) {
+    console.error('❌ Error creating database indexes:', error);
+    // Don't throw error - continue startup
+    console.log('⚠️  Continuing without index creation...');
   }
+}
 
   public async dropDatabase(): Promise<void> {
     if (process.env.NODE_ENV === 'production') {

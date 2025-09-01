@@ -2,7 +2,7 @@
 
 ## 🎯 Notes 
 
-### Commit 1 : Initial Project Setup
+### Chapter1 : Initial Project Setup (3.1 to 3.3 commits)
 
 **Tailwind Shandcn and UI related**
 
@@ -13,5 +13,13 @@
 5. dragged files : global.css to app folder , tailwind.config.ts and tsconfig.json to root. deleted tailwind.config.js.
 6. install shadcn components : npx shadcn@latest add avatar badge button card checkbox command dialog dropdown-menu form input label navigation-menu radio-group select separator sheet sidebar skeleton slider switch table tabs textarea tooltip
 7. copied the constants to lib folder. 
+
+
+### Chapter2 : RTK 
+
+1. install : npm install @reduxjs/toolkit react-redux
+2. copied the state folder -> has all redux toolkit files. 
+3. wrote the providers file in src and wrapped layout in that.
+4. NEXT_PUBLIC_API_BASE_URL = localhost,nodejs address.
 
 

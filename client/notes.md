@@ -15,11 +15,16 @@
 7. copied the constants to lib folder. 
 
 
-### Chapter2 : RTK 
+### Chapter2 : RTK (Commit 3.4)
 
 1. install : npm install @reduxjs/toolkit react-redux
 2. copied the state folder -> has all redux toolkit files. 
 3. wrote the providers file in src and wrapped layout in that.
 4. NEXT_PUBLIC_API_BASE_URL = localhost,nodejs address.
+
+### Chapter3 : RTK (UI to Main Functions.)
+
+1. Created nondashboard landing page and layouts. (commit 4.1)
+2. created The Navbar , Copied Code , put it in landing page. (commit 4.1)
 
 

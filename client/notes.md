@@ -22,9 +22,12 @@
 3. wrote the providers file in src and wrapped layout in that.
 4. NEXT_PUBLIC_API_BASE_URL = localhost,nodejs address.
 
-### Chapter3 : RTK (UI to Main Functions.)
+### Chapter3 : UI (UI Setup)
 
 1. Created nondashboard landing page and layouts. (commit 4.1)
 2. created The Navbar , Copied Code , put it in landing page. (commit 4.1)
+3. framer motion install -> npm install framer-motion (Commit 4.2)
+4. made - HeroSection , FeatureSection and CalltoActionSection (Commit 4.2)
+5. instlled fontawesome for footer and copied footer. -> npm i @fortawesome/fontawesome-svg-core @fortawesome/free-brands-svg-icons @fortawesome/react-fontawesome --legacy-peer-deps (Commit 4.2)
 
 

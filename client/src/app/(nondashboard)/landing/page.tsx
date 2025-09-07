@@ -1,9 +1,16 @@
 "use client"
+import CallToActionSection from "./CallToActionSection"
+import Featuresection from "./FeatureSection"
+import FooterSection from "./FooterSection"
+import HeroSection from "./HeroSection"
+
 const Landing = () => {
     return (
-        <div className="flex flex-col items-center justify-center h-screen">
-            <h1 className="text-4xl font-bold">Welcome to the Landing Page</h1>
-            <p className="mt-4 text-lg">This is a non-dashboard page.</p>
+        <div>
+            <HeroSection />
+            <Featuresection/>
+            <CallToActionSection/>
+            <FooterSection/>
         </div>
     )
 }

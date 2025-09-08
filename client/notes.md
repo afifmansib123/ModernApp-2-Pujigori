@@ -30,4 +30,13 @@
 4. made - HeroSection , FeatureSection and CalltoActionSection (Commit 4.2)
 5. instlled fontawesome for footer and copied footer. -> npm i @fortawesome/fontawesome-svg-core @fortawesome/free-brands-svg-icons @fortawesome/react-fontawesome --legacy-peer-deps (Commit 4.2)
 
+### Chapter4 : Authentication 
+
+1. installed aws amplify : npm i aws-amplify @aws-amplify/ui-react
+2. created the authprovider.tsx file and (auth) routes.
+3. created the env vars : NEXT_PUBLIC_AWS_COGNITO_USER_POOL_ID=
+NEXT_PUBLIC_AWS_COGNITO_USER_POOL_CLIENT_ID=
+4. went to Provider.tsx and wrapped the app with AuthProvider
+5. modified the authprovider.tsx file to work with user types and other modifications.
+
 

@@ -10,6 +10,17 @@ interface DecodedToken {
   username?: string;
 }
 
+// Add interface for error response data
+interface ErrorResponseData {
+  cognitoId: string;
+  needsRegistration: boolean;
+  tokenInfo: {
+    role: string;
+    email?: string;
+    username?: string;
+  };
+}
+
 class AuthController {
   /**
    * POST /api/auth/create-user
@@ -115,15 +126,30 @@ class AuthController {
         return;
       }
 
-      // Get user from database
+      // Get user from database using cognitoId
       const user = await User.findOne({ cognitoId: decoded.sub });
 
       if (!user) {
-        res.status(404).json(ResponseUtils.error('User not found'));
+        // User exists in Cognito but not in our database
+        // Fix: Create properly typed error response data
+        const errorData: ErrorResponseData = {
+          cognitoId: decoded.sub,
+          needsRegistration: true,
+          tokenInfo: {
+            role: decoded['custom:role'] || 'user',
+            email: decoded.email,
+            username: decoded.username
+          }
+        };
+
+        res.status(404).json(ResponseUtils.error(
+          'User not found in database. Please complete registration.',
+          [errorData]
+        ));
         return;
       }
 
-      // Return user data
+      // Return user data with token info
       const userData = {
         _id: user._id,
         cognitoId: user.cognitoId,
@@ -133,7 +159,12 @@ class AuthController {
         role: user.role,
         isVerified: user.isVerified,
         avatar: user.avatar,
-        createdAt: user.createdAt
+        createdAt: user.createdAt,
+        tokenInfo: {
+          role: decoded['custom:role'] || user.role,
+          email: decoded.email,
+          username: decoded.username
+        }
       };
 
       res.json(ResponseUtils.success(
@@ -151,43 +182,61 @@ class AuthController {
    * GET /api/auth/profile/:userId
    * Get user profile
    */
-  async getUserProfile(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try {
-      const { userId } = req.params;
+async getUserProfile(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { userId } = req.params;
 
-      if (!ValidationUtils.isValidObjectId(userId)) {
-        res.status(400).json(ResponseUtils.error('Invalid user ID'));
-        return;
-      }
-
-      const user = await User.findById(userId).select('-__v');
-
-      if (!user) {
-        res.status(404).json(ResponseUtils.error('User not found'));
-        return;
-      }
-
-      // Return public user data
-      const userData = {
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        phoneNumber: user.phoneNumber,
-        role: user.role,
-        isVerified: user.isVerified,
-        avatar: user.avatar,
-        createdAt: user.createdAt
-      };
-
-      res.json(ResponseUtils.success(
-        'User profile retrieved successfully',
-        userData
-      ));
-
-    } catch (error) {
-      next(error);
+    // Try to find by MongoDB ObjectId first, then by cognitoId
+    let user;
+    if (ValidationUtils.isValidObjectId(userId)) {
+      user = await User.findById(userId).select('-__v');
+    } else {
+      // Assume it's a cognitoId if not a valid ObjectId
+      user = await User.findOne({ cognitoId: userId }).select('-__v');
     }
+
+    if (!user) {
+      // CHANGE THIS PART - instead of generic "User not found", 
+      // check if this is a Cognito ID and provide specific error
+      if (!ValidationUtils.isValidObjectId(userId)) {
+        // This looks like a Cognito ID, user needs to be created in database
+        res.status(404).json(ResponseUtils.error(
+          'User not found in database. Please complete registration.',
+          [{
+            cognitoId: userId,
+            needsRegistration: true,
+            error: 'USER_NOT_IN_DB'
+          }]
+        ));
+        return;
+      }
+      
+      res.status(404).json(ResponseUtils.error('User not found'));
+      return;
+    }
+
+    // Return public user data
+    const userData = {
+      _id: user._id,
+      cognitoId: user.cognitoId,
+      name: user.name,
+      email: user.email,
+      phoneNumber: user.phoneNumber,
+      role: user.role,
+      isVerified: user.isVerified,
+      avatar: user.avatar,
+      createdAt: user.createdAt
+    };
+
+    res.json(ResponseUtils.success(
+      'User profile retrieved successfully',
+      userData
+    ));
+
+  } catch (error) {
+    next(error);
   }
+}
 
   /**
    * PUT /api/auth/profile/:userId

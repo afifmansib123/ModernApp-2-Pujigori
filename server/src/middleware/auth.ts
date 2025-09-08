@@ -43,7 +43,8 @@ export const authMiddleware = (allowedRoles: string[]) => {
         return;
       }
 
-      const userRole = decoded['custom:role'] || 'user';
+      // Get role from token, fallback to 'user'
+      const userRole = decoded['custom:role'] || 'user';  // Fixed attribute name
       
       // Set user info on request
       req.user = {

@@ -32,11 +32,23 @@
 
 ### Chapter4 : Authentication 
 
+Commit 5.0 - Setup
+
 1. installed aws amplify : npm i aws-amplify @aws-amplify/ui-react
 2. created the authprovider.tsx file and (auth) routes.
 3. created the env vars : NEXT_PUBLIC_AWS_COGNITO_USER_POOL_ID=
 NEXT_PUBLIC_AWS_COGNITO_USER_POOL_CLIENT_ID=
 4. went to Provider.tsx and wrapped the app with AuthProvider
 5. modified the authprovider.tsx file to work with user types and other modifications.
+
+
+Commit 5.1 - Real Authentication - Look at Every Code in This Comment Carefully 
+A very Difficult authentication / debugging process check all files. commit - 5.1
+
+1. fixed some typos in api.ts in state folder.
+2. created authUtils.ts -> create user in database function -> called backend api at : "/auth/create-user"
+3. edited api.ts -> getuser info from endpoint : "/auth/profile/${userId}", create user if needed.
+4. edited authProvider.tsx to match with new setup.
+5. in nodejs -> fixed AuthController.ts in controllers and auth.ts in middlewares.
 
 

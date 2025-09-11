@@ -59,3 +59,6 @@ Commit 5.3 - Project Related APIs
 
 2 rtk apis : a. getProjectsByCreator -> pointig to getProjectsByCreator in projectcontrollers.
 b. createProject -> POST project api for controllers : createProject.
+
+Commit 5.3 (Backend) - Had to Edit the project routes and import necessary  userMiddleware . then had to create project adn get project.
+some minor changes had to be done. 

@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import ProjectController from '../controllers/ProjectController';
-// import { authMiddleware, adminMiddleware } from '../middleware/auth'; // TODO: Implement auth middleware
+ import { userMiddleware } from '../middleware/auth';
 // import { validateProjectCreate, validateProjectUpdate } from '../middleware/validation'; // TODO: Implement validation
 
 const router = Router();
@@ -21,10 +21,10 @@ router.get('/:id/stats', ProjectController.getProjectStats);
 // router.get('/creator/:creatorId', authMiddleware, ProjectController.getProjectsByCreator);
 
 // Temporary routes for development (remove when auth is integrated)
-router.post('/', ProjectController.createProject);
+router.post('/',userMiddleware, ProjectController.createProject);
 router.put('/:id', ProjectController.updateProject);
 router.delete('/:id', ProjectController.deleteProject);
 router.post('/:id/updates', ProjectController.addProjectUpdate);
-router.get('/creator/:creatorId', ProjectController.getProjectsByCreator);
+router.get('/creator/:creatorId', userMiddleware, ProjectController.getProjectsByCreator);
 
 export default router;

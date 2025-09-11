@@ -31,9 +31,10 @@ export const api = createApi({
     },
   }),
   reducerPath: "api",
-  tagTypes: ["User"],
+  tagTypes: ["User", "Project"],
   endpoints: (build) => ({
-    // Simplified approach - just check user exists, don't auto-create
+    // Auth related endpont
+
     getAuthUser: build.query<User, void>({
       queryFn: async () => {
         try {
@@ -115,6 +116,8 @@ export const api = createApi({
       providesTags: ["User"],
     }),
 
+    /* ----------------------------User Related Endpoints--------------------------------------------*/
+
     // Separate endpoint to get user profile
     getUserProfile: build.query<any, string>({
       query: (userId) => `/auth/profile/${userId}`,
@@ -152,14 +155,17 @@ export const api = createApi({
 
     //get all users
 
-    getAllUsers: build.query<any, {
-      page?: number;
-      limit?: number;
-      role?: string;
-      search?: string;
-      sortBy?: string;
-      sortOrder?: string;
-    }>({
+    getAllUsers: build.query<
+      any,
+      {
+        page?: number;
+        limit?: number;
+        role?: string;
+        search?: string;
+        sortBy?: string;
+        sortOrder?: string;
+      }
+    >({
       query: (filters = {}) => ({
         url: "/auth/users",
         params: filters,
@@ -177,6 +183,59 @@ export const api = createApi({
       }),
       invalidatesTags: ["User"],
     }),
+
+    /* ----------------------------Project Related Endpoints--------------------------------------------*/
+
+    // Get projects by creator
+
+    getProjectsByCreator: build.query<
+      any,
+      {
+        creatorId: string;
+        page?: number;
+        limit?: number;
+        status?: string;
+      }
+    >({
+      query: ({ creatorId, ...params }) => ({
+        url: `/projects/creator/${creatorId}`,
+        params,
+      }),
+      providesTags: (result, error, { creatorId }) => [
+        { type: "Project", id: `creator-${creatorId}` },
+      ],
+    }),
+
+    // create project
+
+    createProject: build.mutation<
+      any,
+      {
+        title: string;
+        description: string;
+        shortDescription: string;
+        category: string;
+        targetAmount: number;
+        startDate: string;
+        endDate: string;
+        location: { district: string; division: string };
+        story: string;
+        risks: string;
+        images?: string[];
+        videoUrl?: string;
+        rewardTiers?: any[];
+        tags?: string[];
+      }
+    >({
+      query: (projectData) => ({
+        url: "/projects",
+        method: "POST",
+        body: projectData,
+      }),
+      invalidatesTags: ["Project"],
+    }),
+
+    //below is closing tag for all endpoints
   }),
 });
 
@@ -185,4 +244,8 @@ export const {
   useGetUserProfileQuery,
   useCreateUserMutation,
   useUpdateUserProfileMutation,
+  useGetAllUsersQuery,
+  useUpdateUserRoleMutation,
+  useGetProjectsByCreatorQuery,
+  useCreateProjectMutation,
 } = api;

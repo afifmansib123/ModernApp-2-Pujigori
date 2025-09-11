@@ -51,4 +51,11 @@ A very Difficult authentication / debugging process check all files. commit - 5.
 4. edited authProvider.tsx to match with new setup.
 5. in nodejs -> fixed AuthController.ts in controllers and auth.ts in middlewares.
 
+Commit 5.2 - 2 rtk apis for getting the users : a. getAllUsers : at state/api and
+endpoint is at routes/auth.ts : /auth/users
+b. updateUserRole : at state/api and endpoint for node js at : /auth/users/${userId}/role
 
+Commit 5.3 - Project Related APIs
+
+2 rtk apis : a. getProjectsByCreator -> pointig to getProjectsByCreator in projectcontrollers.
+b. createProject -> POST project api for controllers : createProject.

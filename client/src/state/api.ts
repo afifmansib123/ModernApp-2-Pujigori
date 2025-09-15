@@ -235,17 +235,105 @@ export const api = createApi({
       invalidatesTags: ["Project"],
     }),
 
+    // get trending projects -> Can show on homepage
+
+    getTrendingProjects: build.query<any, { limit?: number }>({
+      query: ({ limit = 6 } = {}) => ({
+        url: "/projects/trending",
+        params: { limit },
+      }),
+      providesTags: ["Project"],
+    }),
+
+    // get projects by category -> Can use on search page
+
+    getProjectsByCategory: build.query<any, void>({
+      query: () => "/projects/categories",
+      providesTags: ["Project"],
+    }),
+
+    // get project by slug -> Use this to get single project infos, this also has donation related info in the controller as if target , current amount etc
+
+    getProject: build.query<any, string>({
+      query: (slug) => `/projects/${slug}`,
+      providesTags: (result, error, slug) => [{ type: "Project", id: slug }],
+    }),
+
+    // update project by id -> creator id has to match logged in id to update
+
+    updateProject: build.mutation<any, { id: string; data: any }>({
+      query: ({ id, data }) => ({
+        url: `/projects/${id}`,
+        method: "PUT",
+        body: data,
+      }),
+      invalidatesTags: (result, error, { id }) => [{ type: "Project", id }],
+    }),
+
+    // delete project by id 
+
+    deleteProject: build.mutation<any, string>({
+      query: (id) => ({
+        url: `/projects/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Project"],
+    }),
+
+    // what updates were done to the project
+
+    getProjectUpdates: build.query<any, string>({
+      query: (id) => `/projects/${id}/updates`,
+      providesTags: (result, error, id) => [
+        { type: "Project", id: `${id}-updates` },
+      ],
+    }),
+
+    // add more updates to the project
+
+    addProjectUpdate: build.mutation<
+      any,
+      {
+        id: string;
+        data: { title: string; content: string; images?: string[] };
+      }
+    >({
+      query: ({ id, data }) => ({
+        url: `/projects/${id}/updates`,
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: (result, error, { id }) => [
+        { type: "Project", id },
+        { type: "Project", id: `${id}-updates` },
+      ],
+    }),
+
+    // get statistics of project by id -> all info DONATION related data
+
+    getProjectStats: build.query<any, string>({
+      query: (id) => `/projects/${id}/stats`,
+      providesTags: (result, error, id) => [
+        { type: "Project", id: `${id}-stats` },
+      ],
+    }),
+
+    /* ----------------------------S3 / Files Related Endpoints --------------------------------------------*/
+
     // uplod multiple files - Upload images role based
 
-      uploadMultipleFiles: build.mutation<any, {
-      files: File[];
-      folder?: string;
-      resize?: string;
-      quality?: number;
-    }>({
+    uploadMultipleFiles: build.mutation<
+      any,
+      {
+        files: File[];
+        folder?: string;
+        resize?: string;
+        quality?: number;
+      }
+    >({
       query: ({ files, folder = "uploads", resize, quality }) => {
         const formData = new FormData();
-        files.forEach(file => formData.append("files", file));
+        files.forEach((file) => formData.append("files", file));
         formData.append("folder", folder);
         if (resize) formData.append("resize", resize);
         if (quality) formData.append("quality", quality.toString());
@@ -270,7 +358,14 @@ export const {
   useUpdateUserProfileMutation,
   useGetAllUsersQuery,
   useUpdateUserRoleMutation,
-  useGetProjectsByCreatorQuery,
+  useGetTrendingProjectsQuery,
+  useGetProjectsByCategoryQuery,
+  useGetProjectQuery,
   useCreateProjectMutation,
-  useUploadMultipleFilesMutation,
+  useUpdateProjectMutation,
+  useDeleteProjectMutation,
+  useGetProjectUpdatesQuery,
+  useAddProjectUpdateMutation,
+  useGetProjectStatsQuery,
+  useGetProjectsByCreatorQuery,
 } = api;

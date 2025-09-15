@@ -68,3 +68,15 @@ Commit 5.4 - AWS S3 Upload Files - ACL - Access Control List was beeing a proble
     b. in routes , upload routes imported creatorMiddleware .
     c. from upload controllers to uploadMultiple -> rechecked the code.
     d. main S3 configuration is in services -> S3Service. had to edit the ACL there. 
+
+Commit 5.5 - Completing all api related to Projects
+    a. getTrendingProjects
+    b. getProjectsByCategory
+    c. getProject -> use slug to get every project , includes donation info as well
+    d. updateProject -> if creator id matches logged in id
+    e. deleteProject -> delete project by id
+    f. getProjectUpdates -> what updates have been done to the project
+    g. addProjectUpdate -> add more details to the project
+    h. getProjectStats -> get project related statistics.
+    g. getProject stats -> /api/projects/:id/stats , inputting the project mongodb id here we get all donation related stats check 
+    look at controller changes. there was some private method related issues. 

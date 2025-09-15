@@ -1,10 +1,10 @@
-import { Request, Response, NextFunction } from 'express';
-import jwt, { JwtPayload } from 'jsonwebtoken';
-import { ResponseUtils } from '../utils';
+import { Request, Response, NextFunction } from "express";
+import jwt, { JwtPayload } from "jsonwebtoken";
+import { ResponseUtils } from "../utils";
 
 interface DecodedToken extends JwtPayload {
   sub: string;
-  'custom:role'?: string;
+  "custom:role"?: string;
   email?: string;
   username?: string;
 }
@@ -27,44 +27,56 @@ declare global {
  */
 export const authMiddleware = (allowedRoles: string[]) => {
   return (req: Request, res: Response, next: NextFunction): void => {
-    const token = req.headers.authorization?.split(' ')[1];
+    const token = req.headers.authorization?.split(" ")[1];
 
     if (!token) {
-      res.status(401).json(ResponseUtils.error('Unauthorized - No token provided', [], 401));
+      res
+        .status(401)
+        .json(ResponseUtils.error("Unauthorized - No token provided", [], 401));
       return;
     }
 
     try {
       // Decode the JWT token (Cognito tokens are pre-verified)
       const decoded = jwt.decode(token) as DecodedToken;
-      
+
       if (!decoded || !decoded.sub) {
-        res.status(401).json(ResponseUtils.error('Invalid token format', [], 401));
+        res
+          .status(401)
+          .json(ResponseUtils.error("Invalid token format", [], 401));
         return;
       }
 
       // Get role from token, fallback to 'user'
-      const userRole = decoded['custom:role'] || 'user';  // Fixed attribute name
-      
+      const userRole = decoded["custom:role"] || "user"; // Fixed attribute name
+
       // Set user info on request
       req.user = {
         id: decoded.sub,
         role: userRole,
         email: decoded.email,
-        username: decoded.username
+        username: decoded.username,
       };
 
       // Check if user has required role
       const hasAccess = allowedRoles.includes(userRole.toLowerCase());
       if (!hasAccess) {
-        res.status(403).json(ResponseUtils.error('Access Denied - Insufficient permissions', [], 403));
+        res
+          .status(403)
+          .json(
+            ResponseUtils.error(
+              "Access Denied - Insufficient permissions",
+              [],
+              403
+            )
+          );
         return;
       }
 
       next();
     } catch (err) {
-      console.error('Failed to decode token:', err);
-      res.status(401).json(ResponseUtils.error('Invalid token', [], 401));
+      console.error("Failed to decode token:", err);
+      res.status(401).json(ResponseUtils.error("Invalid token", [], 401));
       return;
     }
   };
@@ -73,23 +85,27 @@ export const authMiddleware = (allowedRoles: string[]) => {
 /**
  * Admin authentication middleware zw
  */
-export const adminMiddleware = authMiddleware(['admin']);
+export const adminMiddleware = authMiddleware(["admin"]);
 
 /**
  * Creator authentication middleware (for project creators)
  */
-export const creatorMiddleware = authMiddleware(['creator', 'admin']);
+export const creatorMiddleware = authMiddleware(["creator", "admin"]);
 
 /**
  * User authentication middleware (any authenticated user)
  */
-export const userMiddleware = authMiddleware(['user', 'creator', 'admin']);
+export const userMiddleware = authMiddleware(["user", "creator", "admin"]);
 
 /**
  * Optional authentication middleware (doesn't fail if no token)
  */
-export const optionalAuthMiddleware = (req: Request, res: Response, next: NextFunction): void => {
-  const token = req.headers.authorization?.split(' ')[1];
+export const optionalAuthMiddleware = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void => {
+  const token = req.headers.authorization?.split(" ")[1];
 
   if (!token) {
     // No token provided, continue without user
@@ -99,19 +115,19 @@ export const optionalAuthMiddleware = (req: Request, res: Response, next: NextFu
 
   try {
     const decoded = jwt.decode(token) as DecodedToken;
-    
+
     if (decoded && decoded.sub) {
-      const userRole = decoded['custom:role'] || 'user';
+      const userRole = decoded["custom:role"] || "user";
       req.user = {
         id: decoded.sub,
         role: userRole,
         email: decoded.email,
-        username: decoded.username
+        username: decoded.username,
       };
     }
   } catch (err) {
     // Invalid token, continue without user
-    console.warn('Invalid token in optional auth:', err);
+    console.warn("Invalid token in optional auth:", err);
   }
 
   next();
@@ -120,10 +136,12 @@ export const optionalAuthMiddleware = (req: Request, res: Response, next: NextFu
 /**
  * Resource ownership middleware
  */
-export const ownershipMiddleware = (resourceParam: string = 'id') => {
+export const ownershipMiddleware = (resourceParam: string = "id") => {
   return (req: Request, res: Response, next: NextFunction): void => {
     if (!req.user) {
-      res.status(401).json(ResponseUtils.error('Authentication required', [], 401));
+      res
+        .status(401)
+        .json(ResponseUtils.error("Authentication required", [], 401));
       return;
     }
 
@@ -131,7 +149,7 @@ export const ownershipMiddleware = (resourceParam: string = 'id') => {
     const userId = req.user.id;
 
     // Admin can access any resource
-    if (req.user.role === 'admin') {
+    if (req.user.role === "admin") {
       next();
       return;
     }
@@ -143,6 +161,14 @@ export const ownershipMiddleware = (resourceParam: string = 'id') => {
       return;
     }
 
-    res.status(403).json(ResponseUtils.error('Access denied - You do not own this resource', [], 403));
+    res
+      .status(403)
+      .json(
+        ResponseUtils.error(
+          "Access denied - You do not own this resource",
+          [],
+          403
+        )
+      );
   };
 };

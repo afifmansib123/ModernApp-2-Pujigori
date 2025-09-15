@@ -586,8 +586,8 @@ class ProjectController {
             },
           },
         ]),
-        this.getDailyDonationStats(id),
-        this.getRewardTierStats(id),
+        ProjectController.getDailyDonationStats(id),
+        ProjectController.getRewardTierStats(id),
       ]);
 
       const stats = {
@@ -635,66 +635,66 @@ class ProjectController {
    * Get projects by creator (requires authentication)
    */
 
-// REPLACE THE ENTIRE METHOD WITH:
-async getProjectsByCreator(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
-  try {
-    const { creatorId } = req.params;
-    const { page = 1, limit = 10, status } = req.query;
+  // REPLACE THE ENTIRE METHOD WITH:
+  async getProjectsByCreator(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const { creatorId } = req.params;
+      const { page = 1, limit = 10, status } = req.query;
 
-    // Handle both MongoDB ObjectId and Cognito ID
-    let actualCreatorId;
-    
-    if (ValidationUtils.isValidObjectId(creatorId)) {
-      actualCreatorId = creatorId;
-    } else {
-      const user = await User.findOne({ cognitoId: creatorId });
-      if (!user) {
-        res.status(404).json(ResponseUtils.error('Creator not found'));
-        return;
+      // Handle both MongoDB ObjectId and Cognito ID
+      let actualCreatorId;
+
+      if (ValidationUtils.isValidObjectId(creatorId)) {
+        actualCreatorId = creatorId;
+      } else {
+        const user = await User.findOne({ cognitoId: creatorId });
+        if (!user) {
+          res.status(404).json(ResponseUtils.error("Creator not found"));
+          return;
+        }
+        actualCreatorId = user._id;
       }
-      actualCreatorId = user._id;
+
+      const query: any = { creator: actualCreatorId };
+      if (status) {
+        query.status = status;
+      }
+
+      const skip = (Number(page) - 1) * Number(limit);
+      const [projects, total] = await Promise.all([
+        Project.find(query)
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(Number(limit)),
+        Project.countDocuments(query),
+      ]);
+
+      const meta = ResponseUtils.createPaginationMeta(
+        total,
+        Number(page),
+        Number(limit)
+      );
+
+      res.json(
+        ResponseUtils.success(
+          "Creator projects retrieved successfully",
+          projects,
+          meta
+        )
+      );
+    } catch (error) {
+      next(error);
     }
-
-    const query: any = { creator: actualCreatorId };
-    if (status) {
-      query.status = status;
-    }
-
-    const skip = (Number(page) - 1) * Number(limit);
-    const [projects, total] = await Promise.all([
-      Project.find(query)
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(Number(limit)),
-      Project.countDocuments(query),
-    ]);
-
-    const meta = ResponseUtils.createPaginationMeta(
-      total,
-      Number(page),
-      Number(limit)
-    );
-
-    res.json(
-      ResponseUtils.success(
-        "Creator projects retrieved successfully",
-        projects,
-        meta
-      )
-    );
-  } catch (error) {
-    next(error);
   }
-}
 
   /**
    * Helper: Get daily donation statistics
    */
-  private async getDailyDonationStats(projectId: string) {
+  private static async getDailyDonationStats(projectId: string) {
     const thirtyDaysAgo = DateUtils.addDays(new Date(), -30);
 
     return await Donation.aggregate([
@@ -726,7 +726,7 @@ async getProjectsByCreator(
    * Helper: Get reward tier statistics
    */
 
-  private async getRewardTierStats(projectId: string) {
+  private static async getRewardTierStats(projectId: string) {
     return await Donation.aggregate([
       {
         $match: {

@@ -71,7 +71,7 @@ export const authMiddleware = (allowedRoles: string[]) => {
 };
 
 /**
- * Admin authentication middleware
+ * Admin authentication middleware zw
  */
 export const adminMiddleware = authMiddleware(['admin']);
 

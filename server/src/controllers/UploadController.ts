@@ -159,7 +159,7 @@ class UploadController {
       next(error);
     }
   }
-
+ 
   /**
    * POST /api/upload/presigned-url
    * Generate presigned URL for direct upload

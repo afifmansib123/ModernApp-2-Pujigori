@@ -2,11 +2,12 @@ import { Router } from 'express';
 import multer from 'multer';
 import UploadController from '../controllers/UploadController';
 // import { authMiddleware, adminMiddleware } from '../middleware/auth'; // TODO: Implement auth middleware
+import {creatorMiddleware} from '../middleware/auth';
 
 const router = Router();
 
 // Configure multer for file uploads
-const upload = multer({
+const upload = multer({ 
   storage: multer.memoryStorage(),
   limits: {
     fileSize: 10 * 1024 * 1024, // 10MB limit
@@ -31,7 +32,7 @@ const upload = multer({
     } else {
       cb(new Error(`File type ${file.mimetype} is not allowed`));
     }
-  }
+  } 
 });
 
 // Public utility routes
@@ -40,7 +41,7 @@ router.get('/health', UploadController.getUploadHealth);
 
 // File upload routes (require authentication in production)
 // router.post('/single', authMiddleware, upload.single('file'), UploadController.uploadSingle);
-// router.post('/multiple', authMiddleware, upload.array('files', 10), UploadController.uploadMultiple);
+ router.post('/multiple', creatorMiddleware, upload.array('files', 10), UploadController.uploadMultiple);
 // router.post('/presigned-url', authMiddleware, UploadController.getPresignedUrl);
 
 // File management routes (require authentication in production)

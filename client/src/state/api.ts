@@ -31,7 +31,7 @@ export const api = createApi({
     },
   }),
   reducerPath: "api",
-  tagTypes: ["User", "Project"],
+  tagTypes: ["User", "Project", "Upload"],
   endpoints: (build) => ({
     // Auth related endpont
 
@@ -235,6 +235,30 @@ export const api = createApi({
       invalidatesTags: ["Project"],
     }),
 
+    // uplod multiple files - Upload images role based
+
+      uploadMultipleFiles: build.mutation<any, {
+      files: File[];
+      folder?: string;
+      resize?: string;
+      quality?: number;
+    }>({
+      query: ({ files, folder = "uploads", resize, quality }) => {
+        const formData = new FormData();
+        files.forEach(file => formData.append("files", file));
+        formData.append("folder", folder);
+        if (resize) formData.append("resize", resize);
+        if (quality) formData.append("quality", quality.toString());
+
+        return {
+          url: "/upload/multiple",
+          method: "POST",
+          body: formData,
+        };
+      },
+      invalidatesTags: ["Upload"],
+    }),
+
     //below is closing tag for all endpoints
   }),
 });
@@ -248,4 +272,5 @@ export const {
   useUpdateUserRoleMutation,
   useGetProjectsByCreatorQuery,
   useCreateProjectMutation,
+  useUploadMultipleFilesMutation,
 } = api;

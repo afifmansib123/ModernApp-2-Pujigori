@@ -77,11 +77,6 @@ class S3Service {
         }
       };
 
-      // Make public if requested
-      if (options?.makePublic !== false) {
-        uploadParams.ACL = 'public-read';
-      }
-
       // Upload to S3
       const result = await this.s3.upload(uploadParams).promise();
 
@@ -184,7 +179,6 @@ class S3Service {
         Key: key,
         ContentType: fileType,
         Expires: expiresIn,
-        ACL: 'public-read'
       });
 
       const publicUrl = `https://${this.bucketName}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
@@ -269,7 +263,6 @@ class S3Service {
         Bucket: this.bucketName,
         CopySource: `${this.bucketName}/${sourceKey}`,
         Key: destinationKey,
-        ACL: 'public-read'
       }).promise();
 
       console.log(`File copied from ${sourceKey} to ${destinationKey}`);

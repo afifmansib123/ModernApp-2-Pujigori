@@ -62,3 +62,9 @@ b. createProject -> POST project api for controllers : createProject.
 
 Commit 5.3 (Backend) - Had to Edit the project routes and import necessary  userMiddleware . then had to create project adn get project.
 some minor changes had to be done. 
+
+Commit 5.4 - AWS S3 Upload Files - ACL - Access Control List was beeing a problem , changed it to AWS setting to rely on bucket level public access
+    a. created ploadMultipleFiles in RTK.
+    b. in routes , upload routes imported creatorMiddleware .
+    c. from upload controllers to uploadMultiple -> rechecked the code.
+    d. main S3 configuration is in services -> S3Service. had to edit the ACL there. 

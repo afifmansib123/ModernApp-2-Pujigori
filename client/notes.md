@@ -80,3 +80,9 @@ Commit 5.5 - Completing all api related to Projects
     h. getProjectStats -> get project related statistics.
     g. getProject stats -> /api/projects/:id/stats , inputting the project mongodb id here we get all donation related stats check 
     look at controller changes. there was some private method related issues. 
+
+Commit 5.6 - First Payment Related Test API : InitiatePayment
+
+    a. created the initiatepayment endpont. had to manually make project status active to accept payments. 
+    store details : gmail account of zianmansib123@gmai.com
+    check BLOCKERS.md for debug infp

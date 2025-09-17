@@ -155,18 +155,6 @@ class PaymentController {
           ? "Anonymous Donor"
           : StringUtils.sanitize(customerName),
       };
-      // REMOVE THIS ENTIRE BLOCK - it's contradicting your logic above
-      // if (isAnonymous) {
-      //   donationData.donorInfo = {  // This is WRONG!
-      //     name: StringUtils.sanitize(customerName),
-      //     email: customerEmail.toLowerCase(),
-      //     phone: customerPhone
-      //   };
-      // } else {
-      //   donationData.donor = 'temp-donor-id';
-      // }
-
-      // REPLACE WITH THIS SIMPLE LOGIC:
       if (!isAnonymous) {
         // Only set donor ID for non-anonymous donations
         donationData.donor = "temp-donor-id"; // TODO: Replace with actual authenticated user ID

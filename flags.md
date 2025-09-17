@@ -26,3 +26,7 @@ get creator id from the auth middleware.
 3. in DonationController -> getuserdonation , updateDonorMessage (needs authentication)
 
 4. routes have auth routes and also non auth development dummy routes
+
+*********Payment Related Blockers*******
+5. **************** Had to make status manually active for projects to accept donations. had to change date date formsts also ***************
+

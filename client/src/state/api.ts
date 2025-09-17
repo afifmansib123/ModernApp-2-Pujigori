@@ -31,7 +31,7 @@ export const api = createApi({
     },
   }),
   reducerPath: "api",
-  tagTypes: ["User", "Project", "Upload"],
+  tagTypes: ["User", "Project", "Upload", "Payment"],
   endpoints: (build) => ({
     // Auth related endpont
 
@@ -270,7 +270,7 @@ export const api = createApi({
       invalidatesTags: (result, error, { id }) => [{ type: "Project", id }],
     }),
 
-    // delete project by id 
+    // delete project by id
 
     deleteProject: build.mutation<any, string>({
       query: (id) => ({
@@ -347,6 +347,32 @@ export const api = createApi({
       invalidatesTags: ["Upload"],
     }),
 
+    /* ----------------------------Payment Related Endpoints --------------------------------------------*/
+
+    //initiatePayment endpoint
+
+    initiatePayment: build.mutation<
+      any,
+      {
+        projectId: string;
+        amount: number;
+        rewardTierId?: string;
+        customerName: string;
+        customerEmail: string;
+        customerPhone?: string;
+        customerAddress?: string;
+        isAnonymous?: boolean;
+        message?: string;
+      }
+    >({
+      query: (paymentData) => ({
+        url: "/payments/initiate",
+        method: "POST",
+        body: paymentData,
+      }),
+      invalidatesTags: ["Payment"],
+    }),
+
     //below is closing tag for all endpoints
   }),
 });
@@ -368,4 +394,5 @@ export const {
   useAddProjectUpdateMutation,
   useGetProjectStatsQuery,
   useGetProjectsByCreatorQuery,
+  useInitiatePaymentMutation,
 } = api;

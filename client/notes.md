@@ -85,4 +85,14 @@ Commit 5.6 - First Payment Related Test API : InitiatePayment
 
     a. created the initiatepayment endpont. had to manually make project status active to accept payments. 
     store details : gmail account of zianmansib123@gmai.com
-    check BLOCKERS.md for debug infp
+    check BLOCKERS.md for debug info
+
+Commit 5.7 - All Payment APIs
+
+    a. getPaymentMethods: what kind of payments for the whole app-> credit/debits or mobile banking etc.
+    b. getPaymentStatus : get payment status , status and data of certain transactions. use this to check payment status .
+    c. GetPaymentStatistics : get payment related statisctics -> used for masteradmin only and has
+    to be authenticated using middleware.
+    d. InitiateRefund -> Admin can claim the refund using sslcommerce built in function.
+    e. VerifyPayment -> Admin can verifyPayment.
+** TO Do : 2 apis cant be tested yet (InitiateRefund, VarifyPayment)

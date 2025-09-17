@@ -544,48 +544,48 @@ class PaymentController {
    * GET /api/payments/statistics
    * Get payment statistics (admin only)
    */
-  async getPaymentStatistics(
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ): Promise<void> {
-    try {
-      const { startDate, endDate } = req.query;
+async getPaymentStatistics(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const { startDate, endDate } = req.query;
 
-      const start = startDate ? new Date(startDate as string) : undefined;
-      const end = endDate ? new Date(endDate as string) : undefined;
+    const start = startDate ? new Date(startDate as string) : undefined;
+    const end = endDate ? new Date(endDate as string) : undefined;
 
-      const [donationStats, statusBreakdown] = await Promise.all([
-        Donation.getStatistics(start, end),
-        this.getPaymentStatusBreakdown(start, end),
-      ]);
+    const [donationStats, statusBreakdown] = await Promise.all([
+      Donation.getStatistics(start, end),
+      PaymentController.getPaymentStatusBreakdown(start, end), // Change this line
+    ]);
 
-      const stats = {
-        overview: donationStats[0] || {
-          totalAmount: 0,
-          totalNetAmount: 0,
-          totalAdminFee: 0,
-          donationCount: 0,
-          averageDonation: 0,
-          uniqueProjectCount: 0,
-        },
-        statusBreakdown,
-        period: {
-          startDate: start?.toISOString(),
-          endDate: end?.toISOString(),
-        },
-      };
+    const stats = {
+      overview: donationStats[0] || {
+        totalAmount: 0,
+        totalNetAmount: 0,
+        totalAdminFee: 0,
+        donationCount: 0,
+        averageDonation: 0,
+        uniqueProjectCount: 0,
+      },
+      statusBreakdown,
+      period: {
+        startDate: start?.toISOString(),
+        endDate: end?.toISOString(),
+      },
+    };
 
-      res.json(
-        ResponseUtils.success(
-          "Payment statistics retrieved successfully",
-          stats
-        )
-      );
-    } catch (error) {
-      next(error);
-    }
+    res.json(
+      ResponseUtils.success(
+        "Payment statistics retrieved successfully",
+        stats
+      )
+    );
+  } catch (error) {
+    next(error);
   }
+}
 
   /**
    * POST /api/payments/verify
@@ -646,31 +646,31 @@ class PaymentController {
   /**
    * Helper: Get payment status breakdown
    */
-  private async getPaymentStatusBreakdown(startDate?: Date, endDate?: Date) {
-    const matchStage: any = {};
+private static async getPaymentStatusBreakdown(startDate?: Date, endDate?: Date) {
+  const matchStage: any = {};
 
-    if (startDate || endDate) {
-      matchStage.createdAt = {};
-      if (startDate) matchStage.createdAt.$gte = startDate;
-      if (endDate) matchStage.createdAt.$lte = endDate;
-    }
-
-    return await Donation.aggregate([
-      { $match: matchStage },
-      {
-        $group: {
-          _id: "$paymentStatus",
-          count: { $sum: 1 },
-          totalAmount: { $sum: "$amount" },
-          totalNetAmount: { $sum: "$netAmount" },
-          totalAdminFee: { $sum: "$adminFee" },
-        },
-      },
-      {
-        $sort: { count: -1 },
-      },
-    ]);
+  if (startDate || endDate) {
+    matchStage.createdAt = {};
+    if (startDate) matchStage.createdAt.$gte = startDate;
+    if (endDate) matchStage.createdAt.$lte = endDate;
   }
+
+  return await Donation.aggregate([
+    { $match: matchStage },
+    {
+      $group: {
+        _id: "$paymentStatus",
+        count: { $sum: 1 },
+        totalAmount: { $sum: "$amount" },
+        totalNetAmount: { $sum: "$netAmount" },
+        totalAdminFee: { $sum: "$adminFee" },
+      },
+    },
+    {
+      $sort: { count: -1 },
+    },
+  ]);
+}
 
   /**
    * GET /api/payments/methods

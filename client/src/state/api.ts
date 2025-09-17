@@ -31,7 +31,7 @@ export const api = createApi({
     },
   }),
   reducerPath: "api",
-  tagTypes: ["User", "Project", "Upload", "Payment"],
+  tagTypes: ["User", "Project", "Upload", "Payment", "AdminStats"],
   endpoints: (build) => ({
     // Auth related endpont
 
@@ -373,6 +373,63 @@ export const api = createApi({
       invalidatesTags: ["Payment"],
     }),
 
+    // get payment methods
+
+    getPaymentMethods: build.query<any, void>({
+      query: () => "/payments/methods",
+    }),
+
+    // get payment status -> status and data of certain transactions : use this to check payment status
+
+    getPaymentStatus: build.query<any, string>({
+      query: (transactionId) => `/payments/${transactionId}/status`,
+      providesTags: (result, error, transactionId) => [
+        { type: "Payment", id: transactionId },
+      ],
+    }),
+
+    // get payment statistics - Admin Use Only
+
+    getPaymentStatistics: build.query<
+      any,
+      { startDate?: string; endDate?: string }
+    >({
+      query: (params = {}) => ({
+        url: "/payments/statistics",
+        params,
+      }),
+      providesTags: ["AdminStats"],
+    }),
+
+    // initiate a refund -> Admin Use Only
+
+    initiateRefund: build.mutation<
+      any,
+      { transactionId: string; reason?: string }
+    >({
+      query: ({ transactionId, reason }) => ({
+        url: `/payments/${transactionId}/refund`,
+        method: "POST",
+        body: { reason },
+      }),
+      invalidatesTags: (result, error, { transactionId }) => [
+        { type: "Payment", id: transactionId },
+      ],
+    }),
+
+    // varify a payment -> Admin Use Only
+
+    verifyPayment: build.mutation<
+      any,
+      { transactionId: string; validationId: string; amount?: number }
+    >({
+      query: (data) => ({
+        url: "/payments/verify",
+        method: "POST",
+        body: data,
+      }),
+    }),
+
     //below is closing tag for all endpoints
   }),
 });
@@ -395,4 +452,9 @@ export const {
   useGetProjectStatsQuery,
   useGetProjectsByCreatorQuery,
   useInitiatePaymentMutation,
+  useGetPaymentMethodsQuery,
+  useGetPaymentStatusQuery,
+  useGetPaymentStatisticsQuery,
+  useInitiateRefundMutation,
+  useVerifyPaymentMutation,
 } = api;

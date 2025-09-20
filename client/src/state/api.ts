@@ -31,7 +31,7 @@ export const api = createApi({
     },
   }),
   reducerPath: "api",
-  tagTypes: ["User", "Project", "Upload", "Payment", "AdminStats"],
+  tagTypes: ["User", "Project", "Upload", "Payment", "AdminStats", "Donation"],
   endpoints: (build) => ({
     // Auth related endpont
 
@@ -430,6 +430,168 @@ export const api = createApi({
       }),
     }),
 
+    /* ----------------------------Donation Related Endpoints --------------------------------------------*/
+
+    // get all donations details
+
+    getDonations: build.query<
+      any,
+      {
+        page?: number;
+        limit?: number;
+        projectId?: string;
+        status?: string;
+        minAmount?: number;
+        maxAmount?: number;
+        startDate?: string;
+        endDate?: string;
+        hasReward?: boolean;
+        sort?: string;
+        sortOrder?: string;
+      }
+    >({
+      query: (filters = {}) => ({
+        url: "/donations",
+        params: filters,
+      }),
+      providesTags: ["Donation"],
+    }),
+
+    // get donation by id
+
+    getDonation: build.query<any, string>({
+      query: (id) => `/donations/${id}`,
+      providesTags: (result, error, id) => [{ type: "Donation", id }],
+    }),
+
+    //  get individual project donations / payment related informations
+
+    getProjectDonations: build.query<
+      any,
+      {
+        projectId: string;
+        page?: number;
+        limit?: number;
+        status?: string;
+        includeAnonymous?: boolean;
+      }
+    >({
+      query: ({ projectId, ...params }) => ({
+        url: `/donations/project/${projectId}`,
+        params,
+      }),
+      providesTags: (result, error, { projectId }) => [
+        { type: "Donation", id: `project-${projectId}` },
+      ],
+    }),
+
+    // get donations done by a user by the userid
+
+    getUserDonations: build.query<
+      any,
+      {
+        userId: string;
+        page?: number;
+        limit?: number;
+        status?: string;
+      }
+    >({
+      query: ({ userId, ...params }) => ({
+        url: `/donations/user/${userId}`,
+        params,
+      }),
+      providesTags: (result, error, { userId }) => [
+        { type: "Donation", id: `user-${userId}` },
+      ],
+    }),
+
+    // most recent donations made
+
+    getRecentDonations: build.query<
+      any,
+      { limit?: number; includeAnonymous?: boolean }
+    >({
+      query: (params = {}) => ({
+        url: "/donations/recent",
+        params,
+      }),
+      providesTags: ["Donation"],
+    }),
+
+    // donation qr by donation id -> this will be the ffirst api to generate a reward baseed qr for donations made.
+
+    getDonationQR: build.query<any, { id: string; format?: string }>({
+      query: ({ id, format = "url" }) => ({
+        url: `/donations/${id}/qr`,
+        params: { format },
+      }),
+      providesTags: (result, error, { id }) => [
+        { type: "Donation", id: `${id}-qr` },
+      ],
+    }),
+
+    // redeem rewards by donation id
+
+    redeemReward: build.mutation<
+      any,
+      { id: string; notes?: string; redeemedBy?: string }
+    >({
+      query: ({ id, ...data }) => ({
+        url: `/donations/${id}/redeem`,
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: (result, error, { id }) => [{ type: "Donation", id }],
+    }),
+
+    // get pending rewards
+
+    getPendingRewards: build.query<
+      any,
+      {
+        page?: number;
+        limit?: number;
+        projectId?: string;
+        minValue?: number;
+        createdAfter?: string;
+      }
+    >({
+      query: (params = {}) => ({
+        url: "/donations/rewards/pending",
+        params,
+      }),
+      providesTags: ["Donation"],
+    }),
+
+    // get donation statistics of project by project id
+
+    getDonationStatistics: build.query<
+      any,
+      {
+        projectId?: string;
+        startDate?: string;
+        endDate?: string;
+        groupBy?: string;
+      }
+    >({
+      query: (params = {}) => ({
+        url: "/donations/statistics",
+        params,
+      }),
+      providesTags: ["AdminStats"],
+    }),
+
+    // update doner's message by donation id
+
+    updateDonorMessage: build.mutation<any, { id: string; message?: string }>({
+      query: ({ id, message }) => ({
+        url: `/donations/${id}/message`,
+        method: "POST",
+        body: { message },
+      }),
+      invalidatesTags: (result, error, { id }) => [{ type: "Donation", id }],
+    }),
+
     //below is closing tag for all endpoints
   }),
 });
@@ -457,4 +619,14 @@ export const {
   useGetPaymentStatisticsQuery,
   useInitiateRefundMutation,
   useVerifyPaymentMutation,
+  useGetDonationsQuery,
+  useGetDonationQuery,
+  useGetProjectDonationsQuery,
+  useGetUserDonationsQuery,
+  useGetRecentDonationsQuery,
+  useGetDonationQRQuery,
+  useRedeemRewardMutation,
+  useGetPendingRewardsQuery,
+  useGetDonationStatisticsQuery,
+  useUpdateDonorMessageMutation,
 } = api;

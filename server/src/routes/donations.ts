@@ -8,7 +8,7 @@ const router = Router();
 router.get('/', DonationController.getDonations);
 router.get('/recent', DonationController.getRecentDonations);
 router.get('/project/:projectId', DonationController.getProjectDonations);
-router.get('/statistics', DonationController.getDonationStatistics);
+router.get('/statistics', DonationController.getDonationStatistics); 
 
 // Individual donation routes
 router.get('/:id', DonationController.getDonation);
@@ -16,7 +16,6 @@ router.get('/:id/qr', DonationController.getDonationQR);
 
 // Protected routes (require authentication)
 // router.get('/user/:userId', authMiddleware, DonationController.getUserDonations);
-// router.post('/:id/message', authMiddleware, DonationController.updateDonorMessage);
 
 // Admin/Creator routes
 // router.get('/rewards/pending', authMiddleware, DonationController.getPendingRewards);

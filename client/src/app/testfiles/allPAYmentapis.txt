@@ -1,12 +1,14 @@
+// This is the completed version of the React component.
+
 "use client"
 import React, { useState, useEffect } from 'react';
-import { 
+import {
   useInitiatePaymentMutation,
   useGetPaymentMethodsQuery,
   useGetPaymentStatusQuery,
   useGetPaymentStatisticsQuery,
   useInitiateRefundMutation,
-  useVerifyPaymentMutation,
+  // useVerifyPaymentMutation, // REMOVED - this method doesn't exist anymore
   useGetTrendingProjectsQuery
 } from "@/state/api";
 
@@ -23,20 +25,18 @@ const PaymentAPITestWithRealData = () => {
     isAnonymous: false,
     message: 'Supporting clean water initiative in rural Bangladesh',
     rewardTierId: '68a17a471de260e8e2f61564', // Early Supporter tier
-    
+
     // Status checking
     transactionId: '',
-    
+
     // Statistics
     statisticsStartDate: '2024-08-01',
     statisticsEndDate: new Date().toISOString().split('T')[0],
-    
+
     // Refund
-    refundReason: 'Test refund for water purifier project',
-    
-    // Verification
-    validationId: '',
-    verifyAmount: 500
+    refundReason: 'Test refund for water purifier project'
+
+    // REMOVED validation fields since verifyPayment is gone
   });
 
   // Real project data from your MongoDB
@@ -85,11 +85,11 @@ const PaymentAPITestWithRealData = () => {
 
   // REAL API Hooks - These will make actual network calls
   const { data: paymentMethodsData, error: paymentMethodsError, refetch: refetchPaymentMethods, isLoading: isPaymentMethodsLoading } = useGetPaymentMethodsQuery();
-  
+
   const { data: paymentStatusData, error: paymentStatusError, refetch: refetchPaymentStatus, isLoading: isPaymentStatusLoading } = useGetPaymentStatusQuery(testInputs.transactionId, {
     skip: !testInputs.transactionId
   });
-  
+
   const { data: statisticsData, error: statisticsError, refetch: refetchStatistics, isLoading: isStatisticsLoading } = useGetPaymentStatisticsQuery({
     startDate: testInputs.statisticsStartDate,
     endDate: testInputs.statisticsEndDate
@@ -101,7 +101,7 @@ const PaymentAPITestWithRealData = () => {
   // Mutations - These will make actual POST requests
   const [initiatePayment, { isLoading: isInitiatingPayment, error: initiatePaymentError }] = useInitiatePaymentMutation();
   const [initiateRefund, { isLoading: isInitiatingRefund, error: refundError }] = useInitiateRefundMutation();
-  const [verifyPayment, { isLoading: isVerifyingPayment, error: verifyError }] = useVerifyPaymentMutation();
+  // REMOVED verifyPayment mutation
 
   const [results, setResults] = useState([]);
   const [expandedResult, setExpandedResult] = useState(null);
@@ -199,7 +199,7 @@ const PaymentAPITestWithRealData = () => {
         message: testInputs.message
       }).unwrap();
       const duration = Math.round(performance.now() - start);
-      
+
       // Auto-populate transaction ID for other tests
       if (result.data?.transactionId) {
         setTestInputs(prev => ({
@@ -207,7 +207,7 @@ const PaymentAPITestWithRealData = () => {
           transactionId: result.data.transactionId
         }));
       }
-      
+
       addResult('Initiate Payment', result, null, duration);
     } catch (error) {
       addResult('Initiate Payment', null, error);
@@ -259,25 +259,7 @@ const PaymentAPITestWithRealData = () => {
     }
   };
 
-  const handleVerifyPayment = async () => {
-    if (!testInputs.transactionId || !testInputs.validationId) {
-      addResult('Verify Payment', null, 'Transaction ID and Validation ID are required');
-      return;
-    }
-
-    try {
-      const start = performance.now();
-      const result = await verifyPayment({
-        transactionId: testInputs.transactionId,
-        validationId: testInputs.validationId,
-        amount: testInputs.verifyAmount
-      }).unwrap();
-      const duration = Math.round(performance.now() - start);
-      addResult('Verify Payment', result, null, duration);
-    } catch (error) {
-      addResult('Verify Payment', null, error);
-    }
-  };
+  // REMOVED handleVerifyPayment function entirely
 
   const LoadingSpinner = () => (
     <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
@@ -301,7 +283,7 @@ const PaymentAPITestWithRealData = () => {
           <div className="bg-green-50 border border-green-200 rounded-lg p-6">
             <h3 className="font-bold text-lg text-green-800 mb-2">{realProjectData.title}</h3>
             <p className="text-green-700 text-sm mb-4">{realProjectData.shortDescription}</p>
-            
+
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
                 <span className="font-medium">Target:</span> BDT {realProjectData.targetAmount.toLocaleString()}
@@ -316,7 +298,7 @@ const PaymentAPITestWithRealData = () => {
                 <span className="font-medium">Category:</span> {realProjectData.category}
               </div>
             </div>
-            
+
             <div className="mt-4">
               <h4 className="font-medium mb-2">Reward Tiers:</h4>
               <div className="space-y-2">
@@ -337,7 +319,7 @@ const PaymentAPITestWithRealData = () => {
               </div>
             </div>
           </div>
-          
+
           <div className="bg-blue-50 border border-blue-200 rounded p-4">
             <h4 className="font-medium text-blue-800 mb-2">API Project Detection:</h4>
             {projectsData ? (
@@ -418,7 +400,7 @@ const PaymentAPITestWithRealData = () => {
             </p>
             <p className="text-yellow-700 text-xs">Project ID: {testInputs.projectId}</p>
           </div>
-          
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium mb-2">Project:</label>
@@ -457,7 +439,7 @@ const PaymentAPITestWithRealData = () => {
               </select>
             </div>
           </div>
-          
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium mb-2">Amount (BDT):</label>
@@ -480,7 +462,7 @@ const PaymentAPITestWithRealData = () => {
               />
             </div>
           </div>
-          
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium mb-2">Customer Email:</label>
@@ -542,7 +524,7 @@ const PaymentAPITestWithRealData = () => {
             {isInitiatingPayment && <LoadingSpinner />}
             {isInitiatingPayment ? 'Initiating...' : 'Test Initiate Payment'}
           </button>
-          
+
           {initiatePaymentError && (
             <div className="bg-red-50 p-4 rounded">
               <p className="text-red-700 text-sm">{initiatePaymentError?.data?.message || 'Error initiating payment'}</p>
@@ -585,7 +567,7 @@ const PaymentAPITestWithRealData = () => {
                 </span>
               </p>
               <p className="text-xs text-gray-500">
-                Amount: {paymentStatusData?.data?.amount} | SSL Status: {paymentStatusData?.data?.sslCommerzStatus}
+                Amount: {paymentStatusData?.data?.amount}
               </p>
             </div>
           )}
@@ -639,7 +621,7 @@ const PaymentAPITestWithRealData = () => {
                 Total Amount: {statisticsData?.data?.overview?.totalAmount || 0}
               </p>
               <p className="text-xs text-gray-500">
-                Donations: {statisticsData?.data?.overview?.donationCount} | 
+                Donations: {statisticsData?.data?.overview?.donationCount} |
                 Avg: {statisticsData?.data?.overview?.averageDonation || 0}
               </p>
             </div>
@@ -664,7 +646,7 @@ const PaymentAPITestWithRealData = () => {
               ⚠️ Warning: This will attempt to process a real refund!
             </p>
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium mb-2">Transaction ID:</label>
             <input
@@ -699,61 +681,8 @@ const PaymentAPITestWithRealData = () => {
           )}
         </div>
       )
-    },
-    {
-      id: 'verify-payment',
-      title: 'Verify Payment',
-      description: 'POST /api/payments/verify',
-      status: null,
-      component: (
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-2">Transaction ID:</label>
-              <input
-                type="text"
-                value={testInputs.transactionId}
-                onChange={(e) => setTestInputs(prev => ({ ...prev, transactionId: e.target.value }))}
-                className="w-full border border-gray-300 rounded px-3 py-2"
-                placeholder="PG-123456789"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">Validation ID:</label>
-              <input
-                type="text"
-                value={testInputs.validationId}
-                onChange={(e) => setTestInputs(prev => ({ ...prev, validationId: e.target.value }))}
-                className="w-full border border-gray-300 rounded px-3 py-2"
-                placeholder="validation-id-from-sslcommerz"
-              />
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-2">Amount (optional):</label>
-            <input
-              type="number"
-              value={testInputs.verifyAmount}
-              onChange={(e) => setTestInputs(prev => ({ ...prev, verifyAmount: Number(e.target.value) }))}
-              className="w-full border border-gray-300 rounded px-3 py-2"
-            />
-          </div>
-          <button
-            onClick={handleVerifyPayment}
-            disabled={isVerifyingPayment || !testInputs.transactionId || !testInputs.validationId}
-            className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 disabled:opacity-50 flex items-center gap-2"
-          >
-            {isVerifyingPayment && <LoadingSpinner />}
-            {isVerifyingPayment ? 'Verifying...' : 'Test Verify Payment'}
-          </button>
-          {verifyError && (
-            <div className="bg-red-50 p-4 rounded">
-              <p className="text-red-700 text-sm">{verifyError?.data?.message || 'Error verifying payment'}</p>
-            </div>
-          )}
-        </div>
-      )
     }
+    // REMOVED the verify-payment section entirely
   ];
 
   return (
@@ -761,251 +690,86 @@ const PaymentAPITestWithRealData = () => {
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Payment API Test Suite - REAL API CALLS</h1>
         <p className="text-gray-600">Testing with actual network requests to your payment API</p>
-        
-        <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <h3 className="font-medium text-blue-900 mb-2">API Status Overview</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-            <div className="flex justify-between">
-              <span>Projects:</span>
-              <StatusIndicator data={projectsData} error={projectsError} isLoading={false} />
-            </div>
-            <div className="flex justify-between">
-              <span>Methods:</span>
-              <StatusIndicator data={paymentMethodsData} error={paymentMethodsError} isLoading={isPaymentMethodsLoading} />
-            </div>
-            <div className="flex justify-between">
-              <span>Status:</span>
-              <StatusIndicator data={paymentStatusData} error={paymentStatusError} isLoading={isPaymentStatusLoading} />
-            </div>
-            <div className="flex justify-between">
-              <span>Statistics:</span>
-              <StatusIndicator data={statisticsData} error={statisticsError} isLoading={isStatisticsLoading} />
-            </div>
-          </div>
-        </div>
 
-        {/* Network Status Indicator */}
-        <div className="mt-4 bg-green-50 border border-green-200 rounded-lg p-3">
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-            <span className="text-green-800 text-sm font-medium">
-              🌐 LIVE API MODE - All requests will hit your actual backend
-            </span>
-          </div>
-          <p className="text-green-700 text-xs mt-1">
-            Check Network tab in DevTools to see real HTTP requests
-          </p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          {testSections.map((section) => (
+            <button
+              key={section.id}
+              onClick={() => setActiveTest(section.id)}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200
+                ${activeTest === section.id
+                  ? 'bg-blue-600 text-white shadow-md'
+                  : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+                }`}
+            >
+              {section.title}
+            </button>
+          ))}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        
-        {/* Test Navigation */}
-        <div className="lg:col-span-1">
-          <div className="bg-white border rounded-lg p-4 sticky top-6">
-            <h2 className="font-semibold text-gray-900 mb-4">Test Categories</h2>
-            <nav className="space-y-2">
-              {testSections.map((section) => (
-                <button
-                  key={section.id}
-                  onClick={() => setActiveTest(section.id)}
-                  className={`w-full text-left px-3 py-2 rounded text-sm flex justify-between items-center ${
-                    activeTest === section.id
-                      ? 'bg-blue-100 text-blue-700 font-medium'
-                      : 'text-gray-600 hover:bg-gray-100'
-                  }`}
-                >
-                  <span>{section.title}</span>
-                  {section.status}
-                </button>
-              ))}
-            </nav>
-            
-            <div className="mt-6 pt-4 border-t space-y-2">
-              <button
-                onClick={() => setResults([])}
-                className="w-full text-sm text-gray-500 hover:text-gray-700 py-2"
-              >
-                Clear Results ({results.length})
-              </button>
-              <div className="text-xs text-gray-400">
-                All API calls are logged with timing
-              </div>
-            </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* API Test Controls */}
+        <div className="md:col-span-2 bg-white rounded-lg shadow-md p-6">
+          <h2 className="text-2xl font-semibold text-gray-800 mb-4">
+            {testSections.find(s => s.id === activeTest)?.title}
+            <span className="ml-2 text-sm text-gray-500 font-normal">
+              {testSections.find(s => s.id === activeTest)?.description}
+            </span>
+          </h2>
+          <div className="mb-6">
+            {testSections.find(s => s.id === activeTest)?.component}
           </div>
         </div>
 
-        {/* Test Content */}
-        <div className="lg:col-span-2">
-          <div className="bg-white border rounded-lg p-6">
-            {testSections.map((section) => (
-              activeTest === section.id && (
-                <div key={section.id}>
-                  <div className="mb-6">
-                    <h2 className="text-2xl font-semibold text-gray-900 mb-2">{section.title}</h2>
-                    <div className="bg-blue-50 border border-blue-200 rounded px-3 py-2">
-                      <code className="text-sm text-blue-800">{section.description}</code>
-                    </div>
-                  </div>
-                  {section.component}
-                </div>
-              )
-            ))}
-          </div>
-        </div>
-
-        {/* Results */}
-        <div className="lg:col-span-1">
-          <div className="bg-white border rounded-lg p-6">
-            <h2 className="font-semibold text-gray-900 mb-4">
-              API Results ({results.length})
-            </h2>
-            
+        {/* Results Panel */}
+        <div className="md:col-span-1 bg-white rounded-lg shadow-md p-6">
+          <h2 className="text-2xl font-semibold text-gray-800 mb-4 flex items-center justify-between">
+            API Call Results
+            <button
+              onClick={() => setResults([])}
+              className="text-red-500 hover:text-red-700 text-sm font-normal"
+            >
+              Clear
+            </button>
+          </h2>
+          <div className="space-y-3 max-h-[calc(100vh-250px)] overflow-y-auto">
             {results.length === 0 ? (
-              <div className="text-center py-8">
-                <div className="text-gray-400 text-3xl mb-2">🌐</div>
-                <p className="text-gray-500 text-sm">No API calls made yet</p>
-                <p className="text-gray-400 text-xs">Real network requests will appear here</p>
-              </div>
+              <p className="text-gray-500 text-sm">No API calls made yet. Results will appear here.</p>
             ) : (
-              <div className="space-y-3 max-h-96 overflow-y-auto">
-                {results.map((result) => (
-                  <div 
-                    key={result.id}
-                    className={`border rounded-lg p-3 ${
-                      result.success 
-                        ? 'border-green-200 bg-green-50' 
-                        : 'border-red-200 bg-red-50'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <span className={`text-xs font-medium ${
-                        result.success ? 'text-green-800' : 'text-red-800'
-                      }`}>
+              results.map((result) => (
+                <div
+                  key={result.id}
+                  className={`border rounded-lg p-3 cursor-pointer transition-all duration-200
+                    ${result.success ? 'border-green-300 bg-green-50 hover:bg-green-100' : 'border-red-300 bg-red-50 hover:bg-red-100'}
+                  `}
+                  onClick={() => setExpandedResult(expandedResult?.id === result.id ? null : result)}
+                >
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <span className="font-medium text-gray-900">{result.title}</span>
+                      <span className={`ml-2 text-xs font-semibold ${result.success ? 'text-green-700' : 'text-red-700'}`}>
                         {result.success ? 'SUCCESS' : 'FAILED'}
                       </span>
-                      <div className="flex items-center gap-2 text-xs text-gray-500">
-                        {result.duration && (
-                          <span className={`px-1 rounded ${result.duration < 1000 ? 'bg-green-100' : result.duration < 3000 ? 'bg-yellow-100' : 'bg-red-100'}`}>
-                            {result.duration}ms
-                          </span>
-                        )}
-                        <span>
-                          {new Date(result.timestamp).toLocaleTimeString()}
-                        </span>
-                      </div>
                     </div>
-                    
-                    <h4 className="text-sm font-medium text-gray-900 mb-1">
-                      {result.title}
-                    </h4>
-                    
-                    {result.success ? (
-                      <div>
-                        <p className="text-xs text-gray-600 mb-2">
-                          API call successful
-                        </p>
-                        {result.data && (
-                          <button
-                            onClick={() => setExpandedResult(
-                              expandedResult === result.id ? null : result.id
-                            )}
-                            className="text-xs text-blue-600 hover:text-blue-800"
-                          >
-                            {expandedResult === result.id ? 'Hide' : 'Show'} Response
-                          </button>
-                        )}
-                        {expandedResult === result.id && result.data && (
-                          <div className="mt-2 p-2 bg-white rounded border">
-                            <pre className="text-xs text-gray-700 whitespace-pre-wrap max-h-32 overflow-y-auto">
-                              {JSON.stringify(result.data, null, 2)}
-                            </pre>
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <p className="text-xs text-red-700">
-                        {result.error}
-                      </p>
-                    )}
+                    <div className="text-right">
+                      {result.duration !== null && (
+                        <span className="text-xs text-gray-500">{result.duration}ms</span>
+                      )}
+                      <div className="text-xs text-gray-400">{new Date(result.timestamp).toLocaleTimeString()}</div>
+                    </div>
                   </div>
-                ))}
-              </div>
+                  {expandedResult?.id === result.id && (
+                    <pre className="mt-2 text-xs text-gray-700 bg-gray-100 p-2 rounded overflow-x-auto whitespace-pre-wrap">
+                      {result.success ? JSON.stringify(result.data, null, 2) : result.error ? JSON.stringify(result.error, null, 2) : 'No error details'}
+                    </pre>
+                  )}
+                </div>
+              ))
             )}
           </div>
         </div>
       </div>
-
-      {/* Quick Actions Bar */}
-      <div className="fixed bottom-6 right-6">
-        <div className="bg-white border rounded-lg shadow-lg p-4">
-          <h3 className="font-medium text-gray-900 mb-3">Quick Actions</h3>
-          <div className="space-y-2">
-            <button
-              onClick={handleTestPaymentMethods}
-              disabled={isPaymentMethodsLoading}
-              className="w-full text-left text-sm px-3 py-2 rounded bg-blue-50 hover:bg-blue-100 disabled:opacity-50 flex items-center gap-2"
-            >
-              {isPaymentMethodsLoading && <LoadingSpinner />}
-              Test Payment Methods
-            </button>
-            <button
-              onClick={() => {
-                if (testInputs.projectId && testInputs.customerName && testInputs.customerEmail) {
-                  handleInitiatePayment();
-                } else {
-                  addResult('Quick Payment Test', null, 'Please fill in required payment fields first');
-                }
-              }}
-              disabled={isInitiatingPayment}
-              className="w-full text-left text-sm px-3 py-2 rounded bg-green-50 hover:bg-green-100 disabled:opacity-50 flex items-center gap-2"
-            >
-              {isInitiatingPayment && <LoadingSpinner />}
-              Quick Payment Test
-            </button>
-            <button
-              onClick={() => {
-                handleTestPaymentMethods();
-                setTimeout(() => handleTestStatistics(), 1000);
-              }}
-              className="w-full text-left text-sm px-3 py-2 rounded bg-purple-50 hover:bg-purple-100"
-            >
-              Run Read Tests
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Transaction Helper */}
-      {testInputs.transactionId && (
-        <div className="fixed bottom-6 left-6">
-          <div className="bg-white border rounded-lg shadow-lg p-4 max-w-xs">
-            <h3 className="font-medium text-gray-900 mb-2">Current Transaction</h3>
-            <p className="text-xs text-gray-600 mb-2 font-mono break-all">
-              {testInputs.transactionId}
-            </p>
-            <div className="space-y-1">
-              <button
-                onClick={handleTestPaymentStatus}
-                disabled={isPaymentStatusLoading}
-                className="w-full text-left text-xs px-2 py-1 rounded bg-blue-50 hover:bg-blue-100 disabled:opacity-50 flex items-center gap-1"
-              >
-                {isPaymentStatusLoading && <LoadingSpinner />}
-                {isPaymentStatusLoading ? 'Checking...' : 'Check Status'}
-              </button>
-              <button
-                onClick={() => {
-                  navigator.clipboard.writeText(testInputs.transactionId);
-                  addResult('Copy Transaction ID', { transactionId: testInputs.transactionId }, null, 0);
-                }}
-                className="w-full text-left text-xs px-2 py-1 rounded bg-gray-50 hover:bg-gray-100"
-              >
-                Copy ID
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

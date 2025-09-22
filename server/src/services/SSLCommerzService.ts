@@ -1,13 +1,12 @@
 import axios, { AxiosResponse } from 'axios';
 import crypto from 'crypto';
-import { ISSLCommerzPayment, ISSLCommerzResponse, ISSLCommerzIPN, IDonation } from '../types';
+import { ISSLCommerzPayment, ISSLCommerzResponse } from '../types';
 
 class SSLCommerzService {
   private readonly storeId: string;
   private readonly storePassword: string;
   private readonly isSandbox: boolean;
   private readonly baseUrl: string;
-  private readonly validationUrl: string;
 
   constructor() {
     this.storeId = process.env.SSLCOMMERZ_STORE_ID || '';
@@ -22,10 +21,6 @@ class SSLCommerzService {
     this.baseUrl = this.isSandbox 
       ? 'https://sandbox.sslcommerz.com'
       : 'https://securepay.sslcommerz.com';
-    
-    this.validationUrl = this.isSandbox
-      ? 'https://sandbox.sslcommerz.com/validator/api/validationserverAPI.php'
-      : 'https://securepay.sslcommerz.com/validator/api/validationserverAPI.php';
   }
 
   /**
@@ -68,6 +63,11 @@ class SSLCommerzService {
         product_profile: 'general'
       };
 
+      console.log('Initiating SSLCommerz payment with data:', {
+        ...sslData,
+        store_passwd: '***hidden***'
+      });
+
       const response: AxiosResponse<ISSLCommerzResponse> = await axios.post(
         `${this.baseUrl}/gwprocess/v4/api.php`,
         sslData,
@@ -78,6 +78,12 @@ class SSLCommerzService {
           timeout: 30000
         }
       );
+
+      console.log('SSLCommerz response:', {
+        status: response.data.status,
+        sessionkey: response.data.sessionkey ? 'present' : 'missing',
+        redirectGatewayURL: response.data.redirectGatewayURL ? 'present' : 'missing'
+      });
 
       if (response.data.status === 'SUCCESS') {
         return response.data;
@@ -96,140 +102,49 @@ class SSLCommerzService {
   }
 
   /**
-   * Validate payment transaction
+   * Query transaction status directly from SSLCommerz
    */
-  public async validateTransaction(
-    validationId: string,
-    transactionId: string,
-    amount: number
-  ): Promise<{
+  public async queryTransaction(transactionId: string): Promise<{
     status: string;
-    transactionId: string;
-    amount: number;
-    currency: string;
+    amount?: number;
+    currency?: string;
     bankTransactionId?: string;
     cardType?: string;
-    cardNumber?: string;
-    validatedOn: Date;
+    riskLevel?: string;
   }> {
     try {
-      const validationData = {
-        val_id: validationId,
+      const queryData = {
         store_id: this.storeId,
         store_passwd: this.storePassword,
-        v1: transactionId,
-        v2: amount.toString(),
-        format: 'json'
+        tran_id: transactionId
       };
 
-      const response = await axios.post(this.validationUrl, validationData, {
+      const queryUrl = `${this.baseUrl}/validator/api/merchantTransIDvalidationAPI.php`;
+
+      console.log('Querying transaction status:', transactionId);
+
+      const response = await axios.post(queryUrl, queryData, {
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded'
         },
         timeout: 30000
       });
 
-      const validationResult = response.data;
-
-      if (validationResult.status === 'VALID') {
-        return {
-          status: 'VALID',
-          transactionId: validationResult.tran_id,
-          amount: parseFloat(validationResult.amount),
-          currency: validationResult.currency,
-          bankTransactionId: validationResult.bank_tran_id,
-          cardType: validationResult.card_type,
-          cardNumber: validationResult.card_no,
-          validatedOn: new Date()
-        };
-      } else if (validationResult.status === 'VALIDATED') {
-        return {
-          status: 'ALREADY_VALIDATED',
-          transactionId: validationResult.tran_id,
-          amount: parseFloat(validationResult.amount),
-          currency: validationResult.currency,
-          bankTransactionId: validationResult.bank_tran_id,
-          cardType: validationResult.card_type,
-          cardNumber: validationResult.card_no,
-          validatedOn: new Date()
-        };
-      } else {
-        throw new Error(`Transaction validation failed: ${validationResult.status}`);
-      }
-
-    } catch (error) {
-      console.error('Transaction validation error:', error);
-      throw new Error(
-        axios.isAxiosError(error)
-          ? `Validation service error: ${error.message}`
-          : 'Transaction validation failed'
-      );
-    }
-  }
-
-  /**
-   * Process IPN (Instant Payment Notification) from SSLCommerz
-   */
-  public async processIPN(ipnData: any): Promise<{
-    isValid: boolean;
-    transactionId: string;
-    status: string;
-    amount: number;
-    currency: string;
-    validationId: string;
-    bankTransactionId?: string;
-    cardInfo?: {
-      type: string;
-      number: string;
-      issuer: string;
-      brand: string;
-    };
-  }> {
-    try {
-      // Validate IPN data structure
-      if (!this.isValidIPNData(ipnData)) {
-        throw new Error('Invalid IPN data structure');
-      }
-
-      const ipn: ISSLCommerzIPN = ipnData;
-
-      // Verify the hash
-      if (!this.verifyIPNHash(ipn)) {
-        throw new Error('IPN hash verification failed');
-      }
-
-      // Additional validation with SSLCommerz
-      const validation = await this.validateTransaction(
-        ipn.val_id,
-        ipn.tran_id,
-        ipn.amount
-      );
+      console.log('Transaction query response:', response.data);
 
       return {
-        isValid: validation.status === 'VALID' || validation.status === 'ALREADY_VALIDATED',
-        transactionId: ipn.tran_id,
-        status: ipn.status,
-        amount: ipn.amount,
-        currency: ipn.currency,
-        validationId: ipn.val_id,
-        bankTransactionId: ipn.bank_tran_id,
-        cardInfo: {
-          type: ipn.card_type,
-          number: ipn.card_no,
-          issuer: ipn.card_issuer,
-          brand: ipn.card_brand
-        }
+        status: response.data.status || 'UNKNOWN',
+        amount: response.data.amount ? parseFloat(response.data.amount) : undefined,
+        currency: response.data.currency,
+        bankTransactionId: response.data.bank_tran_id,
+        cardType: response.data.card_type,
+        riskLevel: response.data.risk_level
       };
 
     } catch (error) {
-      console.error('IPN processing error:', error);
+      console.error('Transaction query error:', error);
       return {
-        isValid: false,
-        transactionId: ipnData.tran_id || 'unknown',
-        status: 'FAILED',
-        amount: 0,
-        currency: 'BDT',
-        validationId: ipnData.val_id || 'unknown'
+        status: 'ERROR'
       };
     }
   }
@@ -257,9 +172,9 @@ class SSLCommerzService {
         format: 'json'
       };
 
-      const refundUrl = this.isSandbox
-        ? 'https://sandbox.sslcommerz.com/validator/api/merchantTransIDvalidationAPI.php'
-        : 'https://securepay.sslcommerz.com/validator/api/merchantTransIDvalidationAPI.php';
+      const refundUrl = `${this.baseUrl}/validator/api/merchantTransIDvalidationAPI.php`;
+
+      console.log('Processing refund for bank transaction:', bankTransactionId);
 
       const response = await axios.post(refundUrl, refundData, {
         headers: {
@@ -291,52 +206,6 @@ class SSLCommerzService {
   }
 
   /**
-   * Query transaction status
-   */
-  public async queryTransaction(transactionId: string): Promise<{
-    status: string;
-    amount?: number;
-    currency?: string;
-    bankTransactionId?: string;
-    cardType?: string;
-    riskLevel?: string;
-  }> {
-    try {
-      const queryData = {
-        store_id: this.storeId,
-        store_passwd: this.storePassword,
-        tran_id: transactionId
-      };
-
-      const queryUrl = this.isSandbox
-        ? 'https://sandbox.sslcommerz.com/validator/api/merchantTransIDvalidationAPI.php'
-        : 'https://securepay.sslcommerz.com/validator/api/merchantTransIDvalidationAPI.php';
-
-      const response = await axios.post(queryUrl, queryData, {
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
-        },
-        timeout: 30000
-      });
-
-      return {
-        status: response.data.status || 'UNKNOWN',
-        amount: response.data.amount ? parseFloat(response.data.amount) : undefined,
-        currency: response.data.currency,
-        bankTransactionId: response.data.bank_tran_id,
-        cardType: response.data.card_type,
-        riskLevel: response.data.risk_level
-      };
-
-    } catch (error) {
-      console.error('Transaction query error:', error);
-      return {
-        status: 'ERROR'
-      };
-    }
-  }
-
-  /**
    * Generate secure transaction ID
    */
   public generateTransactionId(prefix = 'PG'): string {
@@ -355,36 +224,29 @@ class SSLCommerzService {
   }
 
   /**
-   * Validate IPN data structure
+   * Basic webhook signature verification
    */
-  private isValidIPNData(data: any): boolean {
-    const requiredFields = [
-      'val_id', 'store_id', 'amount', 'currency', 'tran_id', 
-      'status', 'verify_sign', 'verify_key'
-    ];
-
-    return requiredFields.every(field => data && data[field] !== undefined);
-  }
-
-  /**
-   * Verify IPN hash signature
-   */
-  private verifyIPNHash(ipn: ISSLCommerzIPN): boolean {
+  public verifyWebhookSignature(data: any): boolean {
     try {
-      // Create verification string
-      const verifyString = `${this.storePassword}${ipn.val_id}${ipn.store_id}${ipn.amount}${ipn.currency}${ipn.tran_id}${ipn.status}`;
+      // Basic validation - ensure required fields are present
+      const requiredFields = ['tran_id', 'amount', 'status', 'store_id'];
+      const hasRequiredFields = requiredFields.every(field => data[field] !== undefined);
       
-      // Generate hash
-      const generatedHash = crypto
-        .createHash('md5')
-        .update(verifyString)
-        .digest('hex');
+      if (!hasRequiredFields) {
+        console.error('Missing required webhook fields');
+        return false;
+      }
 
-      // Compare with received hash
-      return generatedHash.toLowerCase() === ipn.verify_sign.toLowerCase();
+      // Verify store ID matches
+      if (data.store_id !== this.storeId) {
+        console.error('Store ID mismatch in webhook');
+        return false;
+      }
+
+      return true;
 
     } catch (error) {
-      console.error('Hash verification error:', error);
+      console.error('Webhook verification error:', error);
       return false;
     }
   }

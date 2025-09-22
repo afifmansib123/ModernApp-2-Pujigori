@@ -23,6 +23,5 @@ router.get(
   PaymentController.getPaymentStatistics
 );
  router.post('/:transactionId/refund', adminMiddleware, PaymentController.initiateRefund);
- router.post('/verify', adminMiddleware, PaymentController.verifyPayment);
 
 export default router;

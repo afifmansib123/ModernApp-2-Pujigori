@@ -110,3 +110,13 @@ Commit 5.8 - All Donation APIs
     j.UpdateDonorMessage -> update message of donations.
 
 ** TO Do : Test Page is there but cannot test all api as there is no donations yet.
+
+Commit 5.11 , 5.12 - accidentally skipped 2 commit numbers. but these 2 commits were mostly testing and fixing.
+so far test results are well. going to start implementing ui now.
+
+
+commit 6.0 - First UI - Navbar
+RTK - useGetAuthUserQuery , 
+AWS amplify - useGetAuthUserQuery
+aws-amplify/auth - signOut
+UI - dropdown-menu , avatar , Button

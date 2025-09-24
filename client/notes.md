@@ -120,3 +120,5 @@ RTK - useGetAuthUserQuery ,
 AWS amplify - useGetAuthUserQuery
 aws-amplify/auth - signOut
 UI - dropdown-menu , avatar , Button
+
+commit 6.1 - HeroSection : A lot of animation (check motion.md)

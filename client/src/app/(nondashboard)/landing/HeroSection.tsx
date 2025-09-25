@@ -1,8 +1,16 @@
 "use client";
 import { motion } from "framer-motion";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useEffect, useState } from "react";
 
 const HeroSection = () => {
+  const [isClient, setIsClient] = useState(false);
+  const isMobile = useIsMobile();
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
   // Animation variants for the glow effect
   const glowVariants = {
     hidden: { opacity: 0, scale: 0.8 },
@@ -49,9 +57,6 @@ const HeroSection = () => {
     }
   };
 
-  // Use the shadcn mobile hook
-  const isMobile = useIsMobile();
-  
   // Calculate positions for 6 circles evenly distributed around the center
   // Each circle is positioned at 60-degree intervals (360° / 6 = 60°)
   // Responsive radius based on mobile/desktop
@@ -94,6 +99,41 @@ const HeroSection = () => {
       angle: 300 // Top-left (10 o'clock)
     }
   ];
+
+  // Don't render the positioned elements until we're on the client
+  if (!isClient) {
+    return (
+      <div className="relative h-screen bg-gradient-to-br from-green-50 to-blue-50 overflow-hidden">
+        {/* Background circles for decoration */}
+        <div className="absolute inset-0">
+          <div className="absolute top-10 left-10 w-32 h-32 bg-green-200 rounded-full opacity-20"></div>
+          <div className="absolute bottom-10 right-10 w-24 h-24 bg-blue-200 rounded-full opacity-20"></div>
+          <div className="absolute top-1/2 left-1/4 w-16 h-16 bg-green-300 rounded-full opacity-15"></div>
+        </div>
+
+        {/* Main content */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="text-center max-w-6xl px-4 sm:px-8">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold text-gray-800 mb-4 sm:mb-6">
+              Risk-Free
+            </h1>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold text-gray-800 mb-2 sm:mb-4">
+              Financing
+            </h2>
+            <h3 className="text-2xl sm:text-3xl md:text-4xl lg:text-6xl font-bold text-gray-800 mb-6 sm:mb-8">
+              start here
+            </h3>
+            <button className="bg-green-600 text-white px-6 sm:px-8 py-2 sm:py-3 rounded-full text-base sm:text-lg font-semibold shadow-lg hover:bg-green-700 transition-colors duration-300">
+              DONATE
+            </button>
+            <p className="text-lg sm:text-xl text-gray-700 mt-6 sm:mt-8 font-medium px-4">
+              1st crowdfunding platform in Bangladesh for startups
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative h-screen bg-gradient-to-br from-green-50 to-blue-50 overflow-hidden">

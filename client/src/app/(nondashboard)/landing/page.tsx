@@ -1,6 +1,6 @@
 "use client"
-import CallToActionSection from "./CallToActionSection"
-import Featuresection from "./FeatureSection"
+import FAQAndTestimonialsSection from "./FAQAndTestimonialsSection"
+import HowItWorksSection from "./HowItWorksSection"
 import FooterSection from "./FooterSection"
 import HeroSection from "./HeroSection"
 
@@ -8,8 +8,8 @@ const Landing = () => {
     return (
         <div>
             <HeroSection />
-            <Featuresection/>
-            <CallToActionSection/>
+            <HowItWorksSection/>
+            <FAQAndTestimonialsSection/>
             <FooterSection/>
         </div>
     )

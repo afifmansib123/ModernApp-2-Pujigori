@@ -122,3 +122,6 @@ aws-amplify/auth - signOut
 UI - dropdown-menu , avatar , Button
 
 commit 6.1 - HeroSection : A lot of animation (check motion.md)
+
+commit 6.2 - All Sections for Home page : latest had to install carasoel : npx shadcn@latest add carousel. Read All codes in 
+other sections for all css work. 

@@ -125,3 +125,10 @@ commit 6.1 - HeroSection : A lot of animation (check motion.md)
 
 commit 6.2 - All Sections for Home page : latest had to install carasoel : npx shadcn@latest add carousel. Read All codes in 
 other sections for all css work. 
+
+Commit 6.3 - Signup?Signin custom Design.
+
+change to custom design . made a different component to have 
+custom design CustomAuth.tsx. Check code change.
+
+

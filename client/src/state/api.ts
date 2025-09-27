@@ -35,86 +35,126 @@ export const api = createApi({
   endpoints: (build) => ({
     // Auth related endpont
 
-    getAuthUser: build.query<User, void>({
-      queryFn: async () => {
-        try {
-          const session = await fetchAuthSession();
-          const { idToken } = session.tokens ?? {};
-          const user = await getCurrentUser();
-          const userRole =
-            (idToken?.payload?.["custom:role"] as UserRole) || "user";
+getAuthUser: build.query<User, void>({
+  queryFn: async () => {
+    try {
+      const session = await fetchAuthSession();
+      const { idToken } = session.tokens ?? {};
+      
+      if (!idToken) {
+        return {
+          error: {
+            status: "CUSTOM_ERROR",
+            error: "No valid session found",
+          },
+        };
+      }
 
-          // Check if user exists in database
-          try {
-            const response = await fetch(
-              `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/profile/${user.userId}`,
-              {
-                headers: {
-                  Authorization: `Bearer ${idToken}`,
-                },
-              }
-            );
+      const user = await getCurrentUser();
+      
+      // Get user role from token
+      const userRole = (idToken?.payload?.["custom:role"] as UserRole) || "user";
+      
+      // Handle user attributes for both OAuth and regular users
+      let userAttributes = {};
+      
+      try {
+        // Try to fetch user attributes (works for regular Cognito users)
+        const { fetchUserAttributes } = await import('aws-amplify/auth');
+        userAttributes = await fetchUserAttributes();
+        console.log('Fetched user attributes via API:', userAttributes);
+      } catch (attributeError) {
+        console.log('Could not fetch user attributes via API (likely OAuth user), using token payload:', attributeError);
+        
+        // For OAuth users, extract info from JWT token payload
+        userAttributes = {
+          email: idToken.payload.email as string,
+          name: idToken.payload.name as string || 
+                idToken.payload.given_name as string || 
+                (idToken.payload.email as string)?.split('@')[0] || 'User',
+          given_name: idToken.payload.given_name as string,
+          family_name: idToken.payload.family_name as string,
+          phone_number: idToken.payload.phone_number as string,
+        };
+      }
+      
+      console.log('Final user attributes:', userAttributes);
+      console.log('User from getCurrentUser:', user);
 
-            if (!response.ok) {
-              if (response.status === 404) {
-                // Parse the error response to get more details
-                const errorData = await response.json();
-
-                // Check if this is specifically a "needs registration" error
-                if (
-                  errorData.errors &&
-                  errorData.errors[0]?.needsRegistration
-                ) {
-                  return {
-                    error: {
-                      status: "USER_NOT_IN_DB",
-                      cognitoUser: user,
-                      userRole,
-                    },
-                  } as any;
-                }
-              }
-
-              throw new Error(
-                `HTTP ${response.status}: ${response.statusText}`
-              );
-            }
-
-            const userProfile = await response.json();
-
-            return {
-              data: {
-                cognitoInfo: {
-                  signInDetails: user.signInDetails,
-                  username: user.username,
-                  userId: user.userId,
-                },
-                userInfo: userProfile.data,
-                userRole,
-              },
-            };
-          } catch (dbError) {
-            console.error("Database check error:", dbError);
-            // Database check failed, return error for user creation
-            return {
-              error: {
-                status: "USER_NOT_IN_DB",
-                cognitoUser: user,
-                userRole,
-              },
-            };
-          }
-        } catch (error: any) {
-          return {
-            error: {
-              status: "CUSTOM_ERROR",
-              error: error.message || "Could not fetch user data",
+      // Check if user exists in database
+      try {
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/profile/${user.userId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${idToken}`,
             },
-          };
+          }
+        );
+
+        if (!response.ok) {
+          if (response.status === 404) {
+            // Parse the error response to get more details
+            const errorData = await response.json();
+
+            // Check if this is specifically a "needs registration" error
+            if (
+              errorData.errors &&
+              errorData.errors[0]?.needsRegistration
+            ) {
+              return {
+                error: {
+                  status: "USER_NOT_IN_DB",
+                  cognitoUser: user,
+                  userRole,
+                  userAttributes,
+                },
+              } as any;
+            }
+          }
+
+          throw new Error(
+            `HTTP ${response.status}: ${response.statusText}`
+          );
         }
-      },
-      providesTags: ["User"],
-    }),
+
+        const userProfile = await response.json();
+
+        return {
+          data: {
+            cognitoInfo: {
+              signInDetails: user.signInDetails,
+              username: user.username,
+              userId: user.userId,
+            },
+            userInfo: userProfile.data,
+            userRole,
+          },
+        };
+      } catch (dbError) {
+        console.error("Database check error:", dbError);
+        // Database check failed, return error for user creation
+        return {
+          error: {
+            status: "USER_NOT_IN_DB",
+            cognitoUser: user,
+            userRole,
+            userAttributes,
+          },
+        };
+      }
+    } catch (error: any) {
+      console.error("getAuthUser error:", error);
+      return {
+        error: {
+          status: "CUSTOM_ERROR",
+          error: error.message || "Could not fetch user data",
+        },
+      };
+    }
+  },
+  providesTags: ["User"],
+}),
 
     /* ----------------------------User Related Endpoints--------------------------------------------*/
 

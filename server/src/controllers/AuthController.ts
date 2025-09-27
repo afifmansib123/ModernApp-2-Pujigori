@@ -182,38 +182,51 @@ class AuthController {
    * GET /api/auth/profile/:userId
    * Get user profile
    */
+
 async getUserProfile(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const { userId } = req.params;
+    
+    console.log('getUserProfile called with userId:', userId);
 
-    // Try to find by MongoDB ObjectId first, then by cognitoId
     let user;
-    if (ValidationUtils.isValidObjectId(userId)) {
-      user = await User.findById(userId).select('-__v');
-    } else {
-      // Assume it's a cognitoId if not a valid ObjectId
-      user = await User.findOne({ cognitoId: userId }).select('-__v');
+    
+    // Always try both search methods for better reliability
+    try {
+      // First try by MongoDB ObjectId if it looks like one
+      if (ValidationUtils.isValidObjectId(userId)) {
+        console.log('Trying search by MongoDB ObjectId first');
+        user = await User.findById(userId).select('-__v');
+      }
+      
+      // If not found and not a valid ObjectId, or if ObjectId search failed, try cognitoId
+      if (!user) {
+        console.log('Searching by cognitoId');
+        user = await User.findOne({ cognitoId: userId }).select('-__v');
+      }
+    } catch (searchError) {
+      console.error('Search error:', searchError);
+      // If search fails, try the other method
+      if (!user) {
+        console.log('Fallback: searching by cognitoId after error');
+        user = await User.findOne({ cognitoId: userId }).select('-__v');
+      }
     }
 
     if (!user) {
-      // CHANGE THIS PART - instead of generic "User not found", 
-      // check if this is a Cognito ID and provide specific error
-      if (!ValidationUtils.isValidObjectId(userId)) {
-        // This looks like a Cognito ID, user needs to be created in database
-        res.status(404).json(ResponseUtils.error(
-          'User not found in database. Please complete registration.',
-          [{
-            cognitoId: userId,
-            needsRegistration: true,
-            error: 'USER_NOT_IN_DB'
-          }]
-        ));
-        return;
-      }
-      
-      res.status(404).json(ResponseUtils.error('User not found'));
+      console.log('User not found in database');
+      res.status(404).json(ResponseUtils.error(
+        'User not found in database. Please complete registration.',
+        [{
+          cognitoId: userId,
+          needsRegistration: true,
+          error: 'USER_NOT_IN_DB'
+        }]
+      ));
       return;
     }
+
+    console.log('User found in database:', user._id);
 
     // Return public user data
     const userData = {
@@ -234,10 +247,10 @@ async getUserProfile(req: Request, res: Response, next: NextFunction): Promise<v
     ));
 
   } catch (error) {
+    console.error('getUserProfile error:', error);
     next(error);
   }
 }
-
   /**
    * PUT /api/auth/profile/:userId
    * Update user profile (requires authentication)

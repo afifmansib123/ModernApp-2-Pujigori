@@ -31,8 +31,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 
 const Navbar = () => {
-  // Get AWS Amplify auth state
-  const { user: amplifyUser } = useAuthenticator((context) => [context.user]);
+const { user: amplifyUser } = useAuthenticator((context) => [context.user]);
 
   // Get user data from database using Cognito ID
   const {
@@ -54,14 +53,36 @@ const Navbar = () => {
   // User is authenticated if amplify user exists
   const isAuthenticated = !!amplifyUser;
 
+  // Handle Google OAuth users who might not be in database yet
+  const isGoogleOAuthUser = amplifyUser?.username?.includes('google') || amplifyUser?.username?.includes('Google');
+  const isUserBeingCreated = error && (error as any)?.status === "USER_NOT_IN_DB";
+
   // Use database user data if available, otherwise use Amplify data as fallback
-  const displayUser = authUser || {
-    name:
-      amplifyUser?.signInDetails?.loginId || amplifyUser?.username || "User",
-    email: amplifyUser?.signInDetails?.loginId || "",
-    role: userRole || "user",
-    avatar: "",
-  };
+  let displayUser = authUser;
+
+  if (!authUser && amplifyUser) {
+    // For Google OAuth users, extract name from Amplify data
+    const googleName = amplifyUser.signInDetails?.loginId?.split('@')[0] || 
+                      amplifyUser.username || 
+                      "Google User";
+    
+    displayUser = {
+      name: googleName,
+      email: amplifyUser.signInDetails?.loginId || "",
+      role: userRole || "user",
+      avatar: "",
+    };
+  }
+
+  // Fallback for unauthenticated users
+  if (!displayUser) {
+    displayUser = {
+      name: "User",
+      email: "",
+      role: "user",
+      avatar: "",
+    };
+  }
 
   console.log("amplifyUser:", amplifyUser);
   console.log("authResponse:", authResponse);

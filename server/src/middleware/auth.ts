@@ -30,27 +30,27 @@ export const authMiddleware = (allowedRoles: string[]) => {
     const token = req.headers.authorization?.split(" ")[1];
 
     if (!token) {
-      res
-        .status(401)
-        .json(ResponseUtils.error("Unauthorized - No token provided", [], 401));
+      res.status(401).json(ResponseUtils.error("Unauthorized - No token provided", [], 401));
       return;
     }
 
     try {
-      // Decode the JWT token (Cognito tokens are pre-verified)
       const decoded = jwt.decode(token) as DecodedToken;
 
       if (!decoded || !decoded.sub) {
-        res
-          .status(401)
-          .json(ResponseUtils.error("Invalid token format", [], 401));
+        res.status(401).json(ResponseUtils.error("Invalid token format", [], 401));
         return;
       }
 
-      // Get role from token, fallback to 'user'
-      const userRole = decoded["custom:role"] || "user"; // Fixed attribute name
+      // For Google OAuth users, handle role assignment differently
+      let userRole = decoded["custom:role"] || "user";
+      
+      // If this is a Google OAuth user (check token issuer or other OAuth indicators)
+      const isOAuthUser = decoded.iss?.includes('cognito') && !decoded["custom:role"];
+      if (isOAuthUser) {
+        userRole = "user"; // Default OAuth users to 'user' role
+      }
 
-      // Set user info on request
       req.user = {
         id: decoded.sub,
         role: userRole,
@@ -58,18 +58,15 @@ export const authMiddleware = (allowedRoles: string[]) => {
         username: decoded.username,
       };
 
-      // Check if user has required role
       const hasAccess = allowedRoles.includes(userRole.toLowerCase());
       if (!hasAccess) {
-        res
-          .status(403)
-          .json(
-            ResponseUtils.error(
-              "Access Denied - Insufficient permissions",
-              [],
-              403
-            )
-          );
+        res.status(403).json(
+          ResponseUtils.error(
+            `Access Denied - Insufficient permissions. Required: ${allowedRoles.join(', ')}, Got: ${userRole}`,
+            [],
+            403
+          )
+        );
         return;
       }
 
@@ -81,7 +78,6 @@ export const authMiddleware = (allowedRoles: string[]) => {
     }
   };
 };
-
 /**
  * Admin authentication middleware zw
  */

@@ -7,7 +7,7 @@ const router = Router();
 // Public auth routes
 router.post('/create-user', AuthController.createUserInDatabase);
 router.get('/verify-token', AuthController.verifyToken);
-router.get('/profile/:userId', AuthController.getUserProfile);
+router.get('/profile/:userId', userMiddleware, AuthController.getUserProfile);
 
 // Protected routes
 router.put('/profile/:userId', userMiddleware, AuthController.updateUserProfile);

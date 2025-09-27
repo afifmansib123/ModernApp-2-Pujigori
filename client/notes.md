@@ -132,3 +132,56 @@ change to custom design . made a different component to have
 custom design CustomAuth.tsx. Check code change.
 
 
+Commit 6.4 - Oauth - A great Function 
+
+step 1 - 
+    a.went to google cloud console and checked my key.
+    in puublic -> look at : Oauth setup.png
+
+    b. went to user pool in aws. looked for app clients -> domain -> 
+    cognito domain. copied this and pasted on my FE env. --> look at : AWS Domain.png
+
+    c. went to user pool > Social and external providers and added google. look at 
+    external providers.png. look at 
+
+    d. went to google cloud console. copied the client id and the client secret.
+    pasted it there. then did some attribute mapping. look at google setting.png 
+
+    e. again went to google cloud console and updated authorized javascript origins and authorized redirect
+    urls. look at cloud console.png
+
+    f. went back to user pool > Social and external providers > google ,
+    put the client id and secret i copied from the google cloud console. 
+
+    g. updated codes -> authprovider , customauth , api.ts -> getauthuser : check code
+
+    h. the part most difficult to find was in user pool ? app clients > login pgages
+    the PLACE EVERYWHERE KEEPS SAYING UI HOATED , look at pic hardtofind.png.
+    put 
+
+    Allowed callback URLs: https://d84fl1y8p4kdic.cloudfront.net,http://localhost:3000/
+
+    Allowed sign-out URLs: http://localhost:3000/
+
+    debug : 1. this should match aws config in google signin option
+
+              domain: process.env.NEXT_PUBLIC_AWS_COGNITO_DOMAIN!,
+              scopes: ["openid", "email", "profile"],
+              redirectSignIn: ["http://localhost:3000/"],
+              redirectSignOut: ["http://localhost:3000/"],
+              responseType: "code",
+              providers: ["Google"],
+
+            2. look at debug.png to make sure email openid and profile is there also.
+
+            3. MAINDEBUG1.png -> have to set google as identity providers
+
+
+AFTER LOT OF DEBUGGING WITH THE COES IT FINALLY WORKED 
+
+
+
+
+
+
+

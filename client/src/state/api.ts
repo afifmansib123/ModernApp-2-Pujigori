@@ -31,7 +31,7 @@ export const api = createApi({
     },
   }),
   reducerPath: "api",
-  tagTypes: ["User", "Project", "Upload", "Payment", "AdminStats", "Donation"],
+  tagTypes: ["User", "Project", "Upload", "Payment", "AdminStats", "Donation", "PaymentRequest"],
   endpoints: (build) => ({
     // Auth related endpont
 
@@ -222,6 +222,36 @@ getAuthUser: build.query<User, void>({
         body: { role },
       }),
       invalidatesTags: ["User"],
+    }),
+
+    /* ----------------------------Admin Related Endpoints--------------------------------------------*/
+
+    //admin's get dashboard
+
+      getDashboard: build.query<any, { period?: number }>({
+      query: ({ period = 30 } = {}) => ({
+        url: "/admin/dashboard",
+        params: { period },
+      }),
+      providesTags: ["AdminStats"],
+    }),
+
+    //admin's get payment requests
+
+    getPaymentRequests: build.query<any, {
+      page?: number;
+      limit?: number;
+      status?: string;
+      minAmount?: number;
+      maxAmount?: number;
+      sortBy?: string;
+      sortOrder?: string;
+    }>({
+      query: (params = {}) => ({
+        url: "/admin/payment-requests",
+        params,
+      }),
+      providesTags: ["PaymentRequest"],
     }),
 
     /* ----------------------------Project Related Endpoints--------------------------------------------*/
@@ -669,4 +699,6 @@ export const {
   useGetPendingRewardsQuery,
   useGetDonationStatisticsQuery,
   useUpdateDonorMessageMutation,
+  useGetDashboardQuery,
+  useGetPaymentRequestsQuery,
 } = api;

@@ -31,7 +31,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 
 const Navbar = () => {
-const { user: amplifyUser } = useAuthenticator((context) => [context.user]);
+  const { user: amplifyUser } = useAuthenticator((context) => [context.user]);
 
   // Get user data from database using Cognito ID
   const {
@@ -54,18 +54,22 @@ const { user: amplifyUser } = useAuthenticator((context) => [context.user]);
   const isAuthenticated = !!amplifyUser;
 
   // Handle Google OAuth users who might not be in database yet
-  const isGoogleOAuthUser = amplifyUser?.username?.includes('google') || amplifyUser?.username?.includes('Google');
-  const isUserBeingCreated = error && (error as any)?.status === "USER_NOT_IN_DB";
+  const isGoogleOAuthUser =
+    amplifyUser?.username?.includes("google") ||
+    amplifyUser?.username?.includes("Google");
+  const isUserBeingCreated =
+    error && (error as any)?.status === "USER_NOT_IN_DB";
 
   // Use database user data if available, otherwise use Amplify data as fallback
   let displayUser = authUser;
 
   if (!authUser && amplifyUser) {
     // For Google OAuth users, extract name from Amplify data
-    const googleName = amplifyUser.signInDetails?.loginId?.split('@')[0] || 
-                      amplifyUser.username || 
-                      "Google User";
-    
+    const googleName =
+      amplifyUser.signInDetails?.loginId?.split("@")[0] ||
+      amplifyUser.username ||
+      "Google User";
+
     displayUser = {
       name: googleName,
       email: amplifyUser.signInDetails?.loginId || "",
@@ -170,15 +174,14 @@ const { user: amplifyUser } = useAuthenticator((context) => [context.user]);
 
   return (
     <div
-      className="fixed top-0 left-0 w-full z-50 shadow-lg border-b border-gray-200"
-      style={{
-        height: `90px`, // Increased from NAVBAR_HEIGHT to fixed 90px
-        background:
-          "linear-gradient(to right, rgba(240, 253, 244, 0.8), rgba(236, 253, 245, 0.6))",
-        boxShadow:
-          "0 4px 6px -1px rgba(34, 197, 94, 0.15), 0 2px 4px -1px rgba(34, 197, 94, 0.1)",
-      }}
-    >
+  className="fixed top-0 left-0 w-full z-50 shadow-lg border-b border-gray-200 overflow-x-hidden"
+  //                                                                            ↑ Add this
+  style={{
+    maxWidth: '100vw', // Add this
+    background: "linear-gradient(to right, rgba(240, 253, 244, 0.8), rgba(236, 253, 245, 0.6))",
+    boxShadow: "0 4px 6px -1px rgba(34, 197, 94, 0.15), 0 2px 4px -1px rgba(34, 197, 94, 0.1)",
+  }}
+>
       <div className="flex items-center justify-between w-full h-full px-4 md:px-8 py-3">
         {/* Left Section - Logo */}
         <div className="flex items-center gap-6">
@@ -188,13 +191,14 @@ const { user: amplifyUser } = useAuthenticator((context) => [context.user]);
             scroll={false}
           >
             {/* Logo placeholder - replace with your actual logo */}
-            <div className="w-[288px] h-[80px] rounded-lg flex items-center justify-center">
+            <div className="w-[120px] h-[35px] sm:w-[180px] sm:h-[50px] lg:w-[288px] lg:h-[80px] rounded-lg flex items-center justify-center">
               <Image
                 src="/logo.png"
                 alt="PujiGori Logo"
                 width={300}
                 height={85}
-                className="h-[85px] w-auto"
+                className="h-full w-auto object-contain" // Changed to h-full and added object-contain
+                priority
               />
             </div>
           </Link>
@@ -274,7 +278,6 @@ const { user: amplifyUser } = useAuthenticator((context) => [context.user]);
           {/* Authentication Section */}
           {isAuthenticated ? (
             <div className="flex items-center gap-3">
-
               {/* User Profile Dropdown */}
               <DropdownMenu>
                 <DropdownMenuTrigger className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 transition-colors focus:outline-none">

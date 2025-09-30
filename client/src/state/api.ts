@@ -701,4 +701,5 @@ export const {
   useUpdateDonorMessageMutation,
   useGetDashboardQuery,
   useGetPaymentRequestsQuery,
+  useUploadMultipleFilesMutation,
 } = api;

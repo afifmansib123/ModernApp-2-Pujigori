@@ -179,6 +179,17 @@ step 1 -
 
 AFTER LOT OF DEBUGGING WITH THE COES IT FINALLY WORKED 
 
+Commit 6.5 - when i created the project , i had shadn UI sidebar. implemented that 
+according to 3 types of users. just the landing page for users. 
+
+Commit 6.6 - Create Projects - A function i was looking forward to 
+
+1. lets start by installing zod , react hook form and filepond image previe. 
+npm install react-hook-form @hookform/resolvers zod
+npm install react-filepond filepond filepond-plugin-image-preview filepond-plugin-file-validate-type filepond-plugin-file-validate-size
+
+2. created project validation file at : src/lib/validations/project.ts
+3. created main create project page. check code.
 
 
 

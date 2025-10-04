@@ -31,130 +31,144 @@ export const api = createApi({
     },
   }),
   reducerPath: "api",
-  tagTypes: ["User", "Project", "Upload", "Payment", "AdminStats", "Donation", "PaymentRequest"],
+  tagTypes: [
+    "User",
+    "Project",
+    "Upload",
+    "Payment",
+    "AdminStats",
+    "Donation",
+    "PaymentRequest",
+  ],
   endpoints: (build) => ({
     // Auth related endpont
 
-getAuthUser: build.query<User, void>({
-  queryFn: async () => {
-    try {
-      const session = await fetchAuthSession();
-      const { idToken } = session.tokens ?? {};
-      
-      if (!idToken) {
-        return {
-          error: {
-            status: "CUSTOM_ERROR",
-            error: "No valid session found",
-          },
-        };
-      }
+    getAuthUser: build.query<User, void>({
+      queryFn: async () => {
+        try {
+          const session = await fetchAuthSession();
+          const { idToken } = session.tokens ?? {};
 
-      const user = await getCurrentUser();
-      
-      // Get user role from token
-      const userRole = (idToken?.payload?.["custom:role"] as UserRole) || "user";
-      
-      // Handle user attributes for both OAuth and regular users
-      let userAttributes = {};
-      
-      try {
-        // Try to fetch user attributes (works for regular Cognito users)
-        const { fetchUserAttributes } = await import('aws-amplify/auth');
-        userAttributes = await fetchUserAttributes();
-        console.log('Fetched user attributes via API:', userAttributes);
-      } catch (attributeError) {
-        console.log('Could not fetch user attributes via API (likely OAuth user), using token payload:', attributeError);
-        
-        // For OAuth users, extract info from JWT token payload
-        userAttributes = {
-          email: idToken.payload.email as string,
-          name: idToken.payload.name as string || 
-                idToken.payload.given_name as string || 
-                (idToken.payload.email as string)?.split('@')[0] || 'User',
-          given_name: idToken.payload.given_name as string,
-          family_name: idToken.payload.family_name as string,
-          phone_number: idToken.payload.phone_number as string,
-        };
-      }
-      
-      console.log('Final user attributes:', userAttributes);
-      console.log('User from getCurrentUser:', user);
-
-      // Check if user exists in database
-      try {
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/profile/${user.userId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${idToken}`,
-            },
+          if (!idToken) {
+            return {
+              error: {
+                status: "CUSTOM_ERROR",
+                error: "No valid session found",
+              },
+            };
           }
-        );
 
-        if (!response.ok) {
-          if (response.status === 404) {
-            // Parse the error response to get more details
-            const errorData = await response.json();
+          const user = await getCurrentUser();
 
-            // Check if this is specifically a "needs registration" error
-            if (
-              errorData.errors &&
-              errorData.errors[0]?.needsRegistration
-            ) {
-              return {
-                error: {
-                  status: "USER_NOT_IN_DB",
-                  cognitoUser: user,
-                  userRole,
-                  userAttributes,
+          // Get user role from token
+          const userRole =
+            (idToken?.payload?.["custom:role"] as UserRole) || "user";
+
+          // Handle user attributes for both OAuth and regular users
+          let userAttributes = {};
+
+          try {
+            // Try to fetch user attributes (works for regular Cognito users)
+            const { fetchUserAttributes } = await import("aws-amplify/auth");
+            userAttributes = await fetchUserAttributes();
+            console.log("Fetched user attributes via API:", userAttributes);
+          } catch (attributeError) {
+            console.log(
+              "Could not fetch user attributes via API (likely OAuth user), using token payload:",
+              attributeError
+            );
+
+            // For OAuth users, extract info from JWT token payload
+            userAttributes = {
+              email: idToken.payload.email as string,
+              name:
+                (idToken.payload.name as string) ||
+                (idToken.payload.given_name as string) ||
+                (idToken.payload.email as string)?.split("@")[0] ||
+                "User",
+              given_name: idToken.payload.given_name as string,
+              family_name: idToken.payload.family_name as string,
+              phone_number: idToken.payload.phone_number as string,
+            };
+          }
+
+          console.log("Final user attributes:", userAttributes);
+          console.log("User from getCurrentUser:", user);
+
+          // Check if user exists in database
+          try {
+            const response = await fetch(
+              `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/profile/${user.userId}`,
+              {
+                headers: {
+                  Authorization: `Bearer ${idToken}`,
                 },
-              } as any;
+              }
+            );
+
+            if (!response.ok) {
+              if (response.status === 404) {
+                // Parse the error response to get more details
+                const errorData = await response.json();
+
+                // Check if this is specifically a "needs registration" error
+                if (
+                  errorData.errors &&
+                  errorData.errors[0]?.needsRegistration
+                ) {
+                  return {
+                    error: {
+                      status: "USER_NOT_IN_DB",
+                      cognitoUser: user,
+                      userRole,
+                      userAttributes,
+                    },
+                  } as any;
+                }
+              }
+
+              throw new Error(
+                `HTTP ${response.status}: ${response.statusText}`
+              );
             }
+
+            const userProfile = await response.json();
+
+            return {
+              data: {
+                cognitoInfo: {
+                  signInDetails: user.signInDetails,
+                  username: user.username,
+                  userId: user.userId,
+                },
+                userInfo: userProfile.data,
+                userRole,
+              },
+            };
+          } catch (dbError) {
+            console.error("Database check error:", dbError);
+            // Database check failed, return error for user creation
+            return {
+              error: {
+                status: "USER_NOT_IN_DB",
+                cognitoUser: user,
+                userRole,
+                userAttributes,
+              },
+            };
           }
-
-          throw new Error(
-            `HTTP ${response.status}: ${response.statusText}`
-          );
-        }
-
-        const userProfile = await response.json();
-
-        return {
-          data: {
-            cognitoInfo: {
-              signInDetails: user.signInDetails,
-              username: user.username,
-              userId: user.userId,
+        } catch (error: any) {
+          console.error("getAuthUser error:", error);
+          return {
+            error: {
+              status: "CUSTOM_ERROR",
+              error: error.message || "Could not fetch user data",
             },
-            userInfo: userProfile.data,
-            userRole,
-          },
-        };
-      } catch (dbError) {
-        console.error("Database check error:", dbError);
-        // Database check failed, return error for user creation
-        return {
-          error: {
-            status: "USER_NOT_IN_DB",
-            cognitoUser: user,
-            userRole,
-            userAttributes,
-          },
-        };
-      }
-    } catch (error: any) {
-      console.error("getAuthUser error:", error);
-      return {
-        error: {
-          status: "CUSTOM_ERROR",
-          error: error.message || "Could not fetch user data",
-        },
-      };
-    }
-  },
-  providesTags: ["User"],
-}),
+          };
+        }
+      },
+      providesTags: ["User"],
+    }),
 
     /* ----------------------------User Related Endpoints--------------------------------------------*/
 
@@ -228,7 +242,7 @@ getAuthUser: build.query<User, void>({
 
     //admin's get dashboard
 
-      getDashboard: build.query<any, { period?: number }>({
+    getDashboard: build.query<any, { period?: number }>({
       query: ({ period = 30 } = {}) => ({
         url: "/admin/dashboard",
         params: { period },
@@ -238,15 +252,18 @@ getAuthUser: build.query<User, void>({
 
     //admin's get payment requests
 
-    getPaymentRequests: build.query<any, {
-      page?: number;
-      limit?: number;
-      status?: string;
-      minAmount?: number;
-      maxAmount?: number;
-      sortBy?: string;
-      sortOrder?: string;
-    }>({
+    getPaymentRequests: build.query<
+      any,
+      {
+        page?: number;
+        limit?: number;
+        status?: string;
+        minAmount?: number;
+        maxAmount?: number;
+        sortBy?: string;
+        sortOrder?: string;
+      }
+    >({
       query: (params = {}) => ({
         url: "/admin/payment-requests",
         params,
@@ -662,6 +679,56 @@ getAuthUser: build.query<User, void>({
       invalidatesTags: (result, error, { id }) => [{ type: "Donation", id }],
     }),
 
+    // ==================== PAYMENT REQUEST ENDPOINTS (CREATOR) ====================
+    createPaymentRequest: build.mutation<
+      any,
+      {
+        projectId: string;
+        requestedAmount: number;
+        bankDetails: {
+          accountHolder: string;
+          bankName: string;
+          accountNumber: string;
+          routingNumber?: string;
+          branchName: string;
+        };
+      }
+    >({
+      query: (data) => ({
+        url: "/payment-requests",
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: ["PaymentRequest", "Project"],
+    }),
+
+    getCreatorPaymentRequests: build.query<
+      any,
+      {
+        page?: number;
+        limit?: number;
+        status?: string;
+      }
+    >({
+      query: (params = {}) => ({
+        url: "/payment-requests/creator",
+        params,
+      }),
+      providesTags: ["PaymentRequest"],
+    }),
+
+    getProjectPaymentRequests: build.query<any, string>({
+      query: (projectId) => `/payment-requests/project/${projectId}`,
+      providesTags: (result, error, projectId) => [
+        { type: "PaymentRequest", id: `project-${projectId}` },
+      ],
+    }),
+
+    getPaymentRequest: build.query<any, string>({
+      query: (id) => `/payment-requests/${id}`,
+      providesTags: (result, error, id) => [{ type: "PaymentRequest", id }],
+    }),
+
     //below is closing tag for all endpoints
   }),
 });
@@ -702,4 +769,8 @@ export const {
   useGetDashboardQuery,
   useGetPaymentRequestsQuery,
   useUploadMultipleFilesMutation,
+  useCreatePaymentRequestMutation,
+  useGetCreatorPaymentRequestsQuery,
+  useGetProjectPaymentRequestsQuery,
+  useGetPaymentRequestQuery,
 } = api;

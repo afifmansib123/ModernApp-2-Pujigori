@@ -4,7 +4,7 @@
 
 
 
-### Commit 1 : Initial Project Setup
+### Step 1 : Initial Project Setup
 
 1. **Create Project Directory**
    -> Manually created the folder and started the project
@@ -30,7 +30,7 @@
    mkdir -p src/{config,models,services,types,utils,controllers,routes,middleware,tests}
    mkdir -p dist logs uploads docs
 
-### Commit 2 : DataBase Models , Serices & App, index.ts.
+### Step 2 : DataBase Models , Serices & App, index.ts.
 
 1. **Create Core Type Definitions**
    - Copy `src/types/index.ts` with all interfaces and enums
@@ -55,7 +55,7 @@
    - Copy `src/app.ts`
    - Copy `src/index.ts`
 
-### Commit 3: Environment Configuration (To do)
+### Step 3: Environment Configuration (To do)
 
 1. **Create Environment File**
    ```bash
@@ -85,7 +85,7 @@
    FRONTEND_URL=http://localhost:3000
    ```
 
-### Commit 4: External Services Setup
+### Step 4: External Services Setup
 
 #### MongoDB Setup
 1. **Install MongoDB locally** or **use MongoDB Atlas**
@@ -170,7 +170,7 @@
    curl http://localhost:5000/api/version
    ```
 
-### Commit 6.1: Next Phase - Controllers
+### Step 6.1: Next Phase - Controllers
 
 Now you're ready to implement the API endpoints. Here's what to create next:
 
@@ -183,12 +183,20 @@ Now you're ready to implement the API endpoints. Here's what to create next:
 
 Check the file and has nice controllers for all crud operations
 
-### Commit 6.2: Next Phase -  Routes
+### Step 6.2: Next Phase -  Routes
 
 **src/routes/projects.ts , admin.ts etc. created all routes**
 
-#### Commit 6.3. Updated App.ts to Use Routes
+#### Step 6.3. Updated App.ts to Use Routes
 
 ### Step 7: Testing and Validation
 
 initially have the simple-test.js
+
+
+### -----------------------------------------------------------Break Since creating Frontend--------------------------------------------- ####
+
+
+### Step 8 : Commit (2.1) 
+
+created controllers , routes for paymentrequest : for witdrawal of project funds by project owners

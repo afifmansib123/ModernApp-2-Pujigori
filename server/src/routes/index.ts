@@ -5,6 +5,7 @@ import paymentRoutes from './payments';
 import adminRoutes from './admin';
 import uploadRoutes from './upload';
 import authRoutes from './auth';
+import paymentrequestRoutes from './paymentRequest'
 
 const router = Router();
 
@@ -34,5 +35,7 @@ router.use('/donations', donationRoutes);
 router.use('/payments', paymentRoutes);
 router.use('/admin', adminRoutes);
 router.use('/upload', uploadRoutes);
+router.use('/payment-requests', paymentrequestRoutes);
+
 
 export default router;

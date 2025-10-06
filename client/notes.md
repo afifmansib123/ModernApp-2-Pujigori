@@ -202,9 +202,11 @@ check code.
 Commit 6.8 - Created a dummy project list page for users. the initiatepayment function from thsi page is ideal for making payment
 in production. Dashboard of Creators , also recieve this payment and show the numbers and amounts properly as expected. also check code.
 
-Commit 6.9 - This time we needed to create the RTK missing API's to complete admin functionalities. 
+Commit 5.14 - This time we needed to create the RTK missing API's to complete admin functionalities. 
 
 look at state ->api.ts to see all the new RTK query function for admin panel
+
+commit 6.9 - Implemet UI - admin's implementation page of the paymentrequets. not tested yet
 
 
 

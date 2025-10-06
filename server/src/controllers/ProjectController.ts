@@ -325,6 +325,7 @@ class ProjectController {
         ...req.body,
         creator: user._id,
         slug: StringUtils.generateSlug(req.body.title),
+        status: "active",
       };
 
       // Validate dates

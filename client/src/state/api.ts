@@ -273,6 +273,29 @@ export const api = createApi({
 
     /* ----------------------------Project Related Endpoints--------------------------------------------*/
 
+    // get all projects
+
+    getProjects: build.query<
+      any,
+      {
+        page?: number;
+        limit?: number;
+        category?: string;
+        status?: string;
+        division?: string;
+        search?: string;
+        sort?: string;
+        sortOrder?: string;
+        featured?: boolean;
+      }
+    >({
+      query: (filters = {}) => ({
+        url: "/projects",
+        params: filters,
+      }),
+      providesTags: ["Project"],
+    }),
+
     // Get projects by creator
 
     getProjectsByCreator: build.query<
@@ -743,6 +766,7 @@ export const {
   useGetTrendingProjectsQuery,
   useGetProjectsByCategoryQuery,
   useGetProjectQuery,
+  useGetProjectsQuery,
   useCreateProjectMutation,
   useUpdateProjectMutation,
   useDeleteProjectMutation,

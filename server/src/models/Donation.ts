@@ -254,17 +254,18 @@ DonationSchema.virtual('donorDisplayName').get(function() {
 
 // Virtual for donation display amount (formatted)
 DonationSchema.virtual('displayAmount').get(function() {
-  return `৳${this.amount.toLocaleString('en-BD')}`;
+  return `৳${(this.amount || 0).toLocaleString('en-BD')}`;
 });
+
 
 // Virtual for admin fee display amount
 DonationSchema.virtual('displayAdminFee').get(function() {
-  return `৳${this.adminFee.toLocaleString('en-BD')}`;
+  return `৳${(this.adminFee || 0).toLocaleString('en-BD')}`;
 });
 
 // Virtual for net amount display
 DonationSchema.virtual('displayNetAmount').get(function() {
-  return `৳${this.netAmount.toLocaleString('en-BD')}`;
+  return `৳${(this.netAmount || 0).toLocaleString('en-BD')}`;
 });
 
 // Instance method to check if donation is successful

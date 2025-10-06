@@ -27,15 +27,13 @@ export default function ProjectManagementPage({
   params: Promise<{ id: string }> 
 }) {
   const resolvedParams = use(params);
-  const slugOrId = resolvedParams.id; // This could be either slug or ID from URL
+  const slugOrId = resolvedParams.id;
 
-  // First fetch project by slug to get the actual MongoDB ID
   const { data: projectData, isLoading: isLoadingProject } = useGetProjectQuery(slugOrId);
 
   const project = projectData?.data;
-  const actualProjectId = project?._id; // Get the real MongoDB ID from the project
+  const actualProjectId = project?._id;
 
-  // Now use the REAL MongoDB ID for these endpoints
   const { data: donationsData, isLoading: isLoadingDonations } = useGetProjectDonationsQuery(
     {
       projectId: actualProjectId,
@@ -43,14 +41,14 @@ export default function ProjectManagementPage({
       limit: 10
     },
     {
-      skip: !actualProjectId, // Skip until we have the real ID
+      skip: !actualProjectId,
     }
   );
 
   const { data: paymentRequestsData } = useGetProjectPaymentRequestsQuery(
     actualProjectId || '',
     {
-      skip: !actualProjectId, // Skip until we have the real ID
+      skip: !actualProjectId,
     }
   );
 
@@ -79,10 +77,14 @@ export default function ProjectManagementPage({
     );
   }
 
-  const stats = project.stats || {};
+  // FIXED: Calculate stats safely with fallbacks
   const fundingProgress = project.targetAmount 
     ? (project.currentAmount / project.targetAmount) * 100 
     : 0;
+  
+  // Calculate net amount (95% of current amount after 5% admin fee)
+  const netAmount = Math.round((project.currentAmount || 0) * 0.95);
+  const adminFee = (project.currentAmount || 0) - netAmount;
 
   return (
     <div className="flex flex-col">
@@ -109,7 +111,7 @@ export default function ProjectManagementPage({
 
       {/* Main Content */}
       <main className="flex-1 p-6 space-y-6">
-        {/* Stats Overview */}
+        {/* Stats Overview - FIXED */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="border rounded-lg p-4 bg-white">
             <div className="flex items-center gap-3">
@@ -118,9 +120,11 @@ export default function ProjectManagementPage({
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Raised</p>
-                <p className="text-2xl font-bold">BDT {project.currentAmount?.toLocaleString()}</p>
+                <p className="text-2xl font-bold">
+                  BDT {(project.currentAmount || 0).toLocaleString()}
+                </p>
                 <p className="text-xs text-muted-foreground">
-                  of {project.targetAmount?.toLocaleString()}
+                  of {(project.targetAmount || 0).toLocaleString()}
                 </p>
               </div>
             </div>
@@ -157,14 +161,18 @@ export default function ProjectManagementPage({
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Available</p>
-                <p className="text-2xl font-bold">BDT {stats.totalNetAmount?.toLocaleString() || 0}</p>
-                <p className="text-xs text-muted-foreground">After fees</p>
+                <p className="text-2xl font-bold">
+                  BDT {netAmount.toLocaleString()}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  After 5% fee (BDT {adminFee.toLocaleString()})
+                </p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Tabs */}
+        {/* Rest of your code stays the same... */}
         <Tabs defaultValue="overview" className="space-y-4">
           <TabsList>
             <TabsTrigger value="overview">Overview</TabsTrigger>
@@ -193,7 +201,9 @@ export default function ProjectManagementPage({
                 </div>
                 <div>
                   <span className="text-sm text-muted-foreground">Location: </span>
-                  <span className="font-medium">{project.location?.district}, {project.location?.division}</span>
+                  <span className="font-medium">
+                    {project.location?.district}, {project.location?.division}
+                  </span>
                 </div>
                 <div>
                   <span className="text-sm text-muted-foreground">Campaign Period: </span>

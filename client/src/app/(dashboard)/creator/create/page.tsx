@@ -212,6 +212,7 @@ export default function CreateProjectPage() {
       const projectData = {
         ...data,
         images: uploadedImageUrls,
+        status: "active", 
       };
 
       const result = await createProject(projectData).unwrap();

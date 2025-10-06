@@ -191,6 +191,21 @@ npm install react-filepond filepond filepond-plugin-image-preview filepond-plugi
 2. created project validation file at : src/lib/validations/project.ts
 3. created main create project page. check code.
 
+Commit 2.1 - PaymentRequest - It is the service that when creators recieve project donations , they have to request to the masteradmin to 
+withdraw their money. the backend was missing. check code its done.
+
+Commit 5.13,6.7 - Frontend for Payment requeat ,
+Frontend for creators dashboard. the creator sees his projects list 
+and then individual oproje's stsatistics.
+check code.
+
+Commit 6.8 - Created a dummy project list page for users. the initiatepayment function from thsi page is ideal for making payment
+in production. Dashboard of Creators , also recieve this payment and show the numbers and amounts properly as expected. also check code.
+
+Commit 6.9 - This time we needed to create the RTK missing API's to complete admin functionalities. 
+
+look at state ->api.ts to see all the new RTK query function for admin panel
+
 
 
 

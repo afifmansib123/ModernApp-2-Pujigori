@@ -752,6 +752,136 @@ export const api = createApi({
       providesTags: (result, error, id) => [{ type: "PaymentRequest", id }],
     }),
 
+    // ==================== ADMIN PAYMENT REQUEST ACTIONS ====================
+    approvePaymentRequest: build.mutation<
+      any,
+      { requestId: string; notes?: string }
+    >({
+      query: ({ requestId, notes }) => ({
+        url: `/admin/payment-requests/${requestId}/approve`,
+        method: "POST",
+        body: { notes },
+      }),
+      invalidatesTags: ["PaymentRequest", "AdminStats", "Project"],
+    }),
+
+    rejectPaymentRequest: build.mutation<
+      any,
+      { requestId: string; reason: string }
+    >({
+      query: ({ requestId, reason }) => ({
+        url: `/admin/payment-requests/${requestId}/reject`,
+        method: "POST",
+        body: { reason },
+      }),
+      invalidatesTags: ["PaymentRequest", "AdminStats"],
+    }),
+
+    markPaymentAsPaid: build.mutation<
+      any,
+      {
+        requestId: string;
+        notes?: string;
+        transactionReference?: string;
+      }
+    >({
+      query: ({ requestId, notes, transactionReference }) => ({
+        url: `/admin/payment-requests/${requestId}/mark-paid`,
+        method: "POST",
+        body: { notes, transactionReference },
+      }),
+      invalidatesTags: ["PaymentRequest", "AdminStats", "Project"],
+    }),
+
+    // ==================== ADMIN PROJECT MANAGEMENT ====================
+    getAdminProjects: build.query<
+      any,
+      {
+        page?: number;
+        limit?: number;
+        status?: string;
+        category?: string;
+        search?: string;
+        sortBy?: string;
+        sortOrder?: string;
+        includeInactive?: boolean;
+      }
+    >({
+      query: (params = {}) => ({
+        url: "/admin/projects",
+        params,
+      }),
+      providesTags: ["Project"],
+    }),
+
+    updateProjectStatus: build.mutation<
+      any,
+      {
+        projectId: string;
+        status: string;
+        reason?: string;
+      }
+    >({
+      query: ({ projectId, status, reason }) => ({
+        url: `/admin/projects/${projectId}/status`,
+        method: "PUT",
+        body: { status, reason },
+      }),
+      invalidatesTags: ["Project", "AdminStats"],
+    }),
+
+    // ==================== ADMIN DONATIONS ====================
+    getAdminDonations: build.query<
+      any,
+      {
+        page?: number;
+        limit?: number;
+        status?: string;
+        projectId?: string;
+        minAmount?: number;
+        maxAmount?: number;
+        flagged?: boolean;
+        sortBy?: string;
+        sortOrder?: string;
+      }
+    >({
+      query: (params = {}) => ({
+        url: "/admin/donations",
+        params,
+      }),
+      providesTags: ["Donation"],
+    }),
+
+    // ==================== ADMIN ANALYTICS ====================
+    getAdminAnalytics: build.query<
+      any,
+      {
+        period?: string;
+        groupBy?: string;
+      }
+    >({
+      query: (params = {}) => ({
+        url: "/admin/analytics",
+        params,
+      }),
+      providesTags: ["AdminStats"],
+    }),
+
+    getFinancialReport: build.query<
+      any,
+      {
+        startDate: string;
+        endDate: string;
+        format?: string;
+      }
+    >({
+      query: (params) => ({
+        url: "/admin/reports/financial",
+        params,
+      }),
+      providesTags: ["AdminStats"],
+    }),
+
     //below is closing tag for all endpoints
   }),
 });
@@ -797,4 +927,12 @@ export const {
   useGetCreatorPaymentRequestsQuery,
   useGetProjectPaymentRequestsQuery,
   useGetPaymentRequestQuery,
+  useApprovePaymentRequestMutation,
+  useRejectPaymentRequestMutation,
+  useMarkPaymentAsPaidMutation,
+  useGetAdminProjectsQuery,
+  useUpdateProjectStatusMutation,
+  useGetAdminDonationsQuery,
+  useGetAdminAnalyticsQuery,
+  useGetFinancialReportQuery,
 } = api;

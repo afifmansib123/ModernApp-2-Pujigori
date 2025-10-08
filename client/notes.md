@@ -220,6 +220,18 @@ We will move on to Admin Pnale functions from here.
 
 Commit 7.1 , 2.3 - Fixed Admin Controllers and Dashboard of admin now working
 
+Commit 7.3 , 2.4 - We needed to now create the qr reward function of donors. the first problem was 
+in both paymentcontrollers and frontend code , we were sending temp-id , so donations were being made but users didnt see any reward yet. so fixed the controllers and the page for users to see the projects. and it worked.
+
+next created wallet page for users. in nect.config.js -> 
+const nextConfig: NextConfig = {
+  images: {
+    domains: ['anewtestingbucketisbetter.s3.ap-southeast-1.amazonaws.com'],
+  },
+};
+
+now reward qr is visibale and readable.
+
 
 
 

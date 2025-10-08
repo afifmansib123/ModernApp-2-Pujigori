@@ -1,12 +1,13 @@
 import { Router } from "express";
 import PaymentController from "../controllers/PaymentController";
 import { adminMiddleware } from "../middleware/auth";
+import { userMiddleware } from "../middleware/auth";
 // import { validatePaymentInitiate } from '../middleware/validation'; // TODO: Implement validation
 
 const router = Router();
 
 // Public payment routes
-router.post("/initiate", PaymentController.initiatePayment);
+router.post('/initiate', userMiddleware, PaymentController.initiatePayment);
 router.get("/methods", PaymentController.getPaymentMethods);
 router.get("/:transactionId/status", PaymentController.getPaymentStatus);
 

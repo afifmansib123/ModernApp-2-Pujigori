@@ -1,7 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { useGetProjectsQuery, useInitiatePaymentMutation } from "@/state/api";
+import {
+  useGetProjectsQuery,
+  useInitiatePaymentMutation,
+  useGetAuthUserQuery,
+} from "@/state/api";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
@@ -36,10 +40,13 @@ const CATEGORIES = [
 ];
 
 export default function UserProjectsPage() {
+  const { data: authUser, isLoading: isAuthLoading } = useGetAuthUserQuery();
+  const userId = authUser?.userInfo?._id;
+
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
-  
+
   // Payment modal state
   const [selectedProject, setSelectedProject] = useState<any>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -62,7 +69,8 @@ export default function UserProjectsPage() {
     search: searchTerm || undefined,
   });
 
-  const [initiatePayment, { isLoading: isProcessingPayment }] = useInitiatePaymentMutation();
+  const [initiatePayment, { isLoading: isProcessingPayment }] =
+    useInitiatePaymentMutation();
 
   const projects = projectsData?.data || [];
   const meta = projectsData?.meta;
@@ -77,8 +85,8 @@ export default function UserProjectsPage() {
 
   const handleBackProject = (project: any) => {
     setSelectedProject(project);
-    const lowestTier = project.rewardTiers?.sort((a: any, b: any) => 
-      a.minimumAmount - b.minimumAmount
+    const lowestTier = project.rewardTiers?.sort(
+      (a: any, b: any) => a.minimumAmount - b.minimumAmount
     )[0];
     setPaymentForm({
       amount: lowestTier?.minimumAmount || 100,
@@ -95,6 +103,16 @@ export default function UserProjectsPage() {
 
   const handlePaymentSubmit = async () => {
     if (!selectedProject) return;
+
+    if (!userId) {
+      alert("Please log in to make a donation");
+
+      if (!paymentForm.customerName || !paymentForm.customerEmail) {
+        alert("Please fill in your name and email");
+        return;
+      }
+      return;
+    }
 
     // Validation
     if (!paymentForm.customerName || !paymentForm.customerEmail) {
@@ -124,13 +142,17 @@ export default function UserProjectsPage() {
         window.location.href = result.data.paymentGateway;
       }
     } catch (error: any) {
-      alert(error?.data?.message || "Payment initiation failed. Please try again.");
+      alert(
+        error?.data?.message || "Payment initiation failed. Please try again."
+      );
       console.error("Payment error:", error);
     }
   };
 
   const handleRewardTierChange = (tierId: string) => {
-    const tier = selectedProject?.rewardTiers?.find((t: any) => t._id === tierId);
+    const tier = selectedProject?.rewardTiers?.find(
+      (t: any) => t._id === tierId
+    );
     setPaymentForm({
       ...paymentForm,
       rewardTierId: tierId,
@@ -181,7 +203,10 @@ export default function UserProjectsPage() {
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[...Array(6)].map((_, i) => (
-              <div key={i} className="h-96 bg-white rounded-lg animate-pulse border" />
+              <div
+                key={i}
+                className="h-96 bg-white rounded-lg animate-pulse border"
+              />
             ))}
           </div>
         ) : projects.length > 0 ? (
@@ -261,7 +286,7 @@ export default function UserProjectsPage() {
                         </div>
                       </div>
 
-                      <Button 
+                      <Button
                         className="w-full bg-green-600 hover:bg-green-700"
                         onClick={(e) => {
                           e.preventDefault();
@@ -317,59 +342,58 @@ export default function UserProjectsPage() {
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-2xl">Back This Project</DialogTitle>
-            <DialogDescription>
-              {selectedProject?.title}
-            </DialogDescription>
+            <DialogDescription>{selectedProject?.title}</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 mt-4">
             {/* Reward Tiers */}
-            {selectedProject?.rewardTiers && selectedProject.rewardTiers.length > 0 && (
-              <div>
-                <label className="block text-sm font-medium mb-2">
-                  Select Reward Tier (Optional)
-                </label>
-                <div className="space-y-2">
-                  <div
-                    onClick={() => handleRewardTierChange("")}
-                    className={`border rounded-lg p-3 cursor-pointer transition-colors ${
-                      !paymentForm.rewardTierId
-                        ? "border-green-600 bg-green-50"
-                        : "border-gray-200 hover:border-gray-300"
-                    }`}
-                  >
-                    <div className="font-medium">No Reward</div>
-                    <div className="text-sm text-gray-600">
-                      Support without selecting a reward tier
-                    </div>
-                  </div>
-                  {selectedProject.rewardTiers.map((tier: any) => (
+            {selectedProject?.rewardTiers &&
+              selectedProject.rewardTiers.length > 0 && (
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Select Reward Tier (Optional)
+                  </label>
+                  <div className="space-y-2">
                     <div
-                      key={tier._id}
-                      onClick={() => handleRewardTierChange(tier._id)}
+                      onClick={() => handleRewardTierChange("")}
                       className={`border rounded-lg p-3 cursor-pointer transition-colors ${
-                        paymentForm.rewardTierId === tier._id
+                        !paymentForm.rewardTierId
                           ? "border-green-600 bg-green-50"
                           : "border-gray-200 hover:border-gray-300"
                       }`}
                     >
-                      <div className="flex justify-between items-start mb-2">
-                        <div className="font-medium">{tier.title}</div>
-                        <div className="text-green-600 font-bold">
-                          BDT {tier.minimumAmount.toLocaleString()}
-                        </div>
-                      </div>
-                      <div className="text-sm text-gray-600 mb-2">
-                        {tier.description}
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        {tier.currentBackers}/{tier.maxBackers} backers
+                      <div className="font-medium">No Reward</div>
+                      <div className="text-sm text-gray-600">
+                        Support without selecting a reward tier
                       </div>
                     </div>
-                  ))}
+                    {selectedProject.rewardTiers.map((tier: any) => (
+                      <div
+                        key={tier._id}
+                        onClick={() => handleRewardTierChange(tier._id)}
+                        className={`border rounded-lg p-3 cursor-pointer transition-colors ${
+                          paymentForm.rewardTierId === tier._id
+                            ? "border-green-600 bg-green-50"
+                            : "border-gray-200 hover:border-gray-300"
+                        }`}
+                      >
+                        <div className="flex justify-between items-start mb-2">
+                          <div className="font-medium">{tier.title}</div>
+                          <div className="text-green-600 font-bold">
+                            BDT {tier.minimumAmount.toLocaleString()}
+                          </div>
+                        </div>
+                        <div className="text-sm text-gray-600 mb-2">
+                          {tier.description}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {tier.currentBackers}/{tier.maxBackers} backers
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
             {/* Amount */}
             <div>
@@ -380,7 +404,10 @@ export default function UserProjectsPage() {
                 type="number"
                 value={paymentForm.amount}
                 onChange={(e) =>
-                  setPaymentForm({ ...paymentForm, amount: Number(e.target.value) })
+                  setPaymentForm({
+                    ...paymentForm,
+                    amount: Number(e.target.value),
+                  })
                 }
                 min="10"
                 max="500000"
@@ -401,7 +428,10 @@ export default function UserProjectsPage() {
                   type="text"
                   value={paymentForm.customerName}
                   onChange={(e) =>
-                    setPaymentForm({ ...paymentForm, customerName: e.target.value })
+                    setPaymentForm({
+                      ...paymentForm,
+                      customerName: e.target.value,
+                    })
                   }
                   required
                   disabled={paymentForm.isAnonymous}
@@ -416,7 +446,10 @@ export default function UserProjectsPage() {
                   type="email"
                   value={paymentForm.customerEmail}
                   onChange={(e) =>
-                    setPaymentForm({ ...paymentForm, customerEmail: e.target.value })
+                    setPaymentForm({
+                      ...paymentForm,
+                      customerEmail: e.target.value,
+                    })
                   }
                   required
                   placeholder="your@email.com"
@@ -433,7 +466,10 @@ export default function UserProjectsPage() {
                   type="tel"
                   value={paymentForm.customerPhone}
                   onChange={(e) =>
-                    setPaymentForm({ ...paymentForm, customerPhone: e.target.value })
+                    setPaymentForm({
+                      ...paymentForm,
+                      customerPhone: e.target.value,
+                    })
                   }
                   placeholder="01700000000"
                 />
@@ -483,7 +519,10 @@ export default function UserProjectsPage() {
                 id="anonymous"
                 checked={paymentForm.isAnonymous}
                 onChange={(e) =>
-                  setPaymentForm({ ...paymentForm, isAnonymous: e.target.checked })
+                  setPaymentForm({
+                    ...paymentForm,
+                    isAnonymous: e.target.checked,
+                  })
                 }
                 className="mr-2 h-4 w-4"
               />
@@ -496,11 +535,15 @@ export default function UserProjectsPage() {
             <div className="bg-gray-50 rounded-lg p-4 space-y-2">
               <div className="flex justify-between text-sm">
                 <span>Donation Amount:</span>
-                <span className="font-medium">BDT {paymentForm.amount.toLocaleString()}</span>
+                <span className="font-medium">
+                  BDT {paymentForm.amount.toLocaleString()}
+                </span>
               </div>
               <div className="flex justify-between text-sm">
                 <span>Admin Fee (5%):</span>
-                <span className="font-medium">BDT {Math.round(paymentForm.amount * 0.05).toLocaleString()}</span>
+                <span className="font-medium">
+                  BDT {Math.round(paymentForm.amount * 0.05).toLocaleString()}
+                </span>
               </div>
               <div className="flex justify-between text-sm">
                 <span>Project Receives:</span>

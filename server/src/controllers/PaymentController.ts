@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import Project from "../models/Project";
 import Donation from "../models/Donation";
+import User from "../models/User";
 import sslCommerzService from "../services/SSLCommerzService";
 import qrService from "../services/QRService";
 import {
@@ -151,36 +152,45 @@ async initiatePayment(
     });
 
     // Create donation record
-    const donationData: any = {
-      project: projectId,
-      amount: donationAmount,
-      adminFee: adminFee,           // ✅ ADDED
-      netAmount: netAmount,         // ✅ ADDED
-      transactionId,
-      paymentStatus: PaymentStatus.PENDING,
-      paymentMethod: "sslcommerz",
-      rewardTier: rewardTierId,
-      rewardValue,
-      isAnonymous,
-      donor: null as string | null,
-      message: message ? StringUtils.sanitize(message) : undefined,
-      donorInfo: !isAnonymous
-        ? {
-            name: StringUtils.sanitize(customerName),
-            email: customerEmail.toLowerCase(),
-            phone: customerPhone,
-          }
-        : undefined,
-      donorDisplayName: isAnonymous
-        ? "Anonymous Donor"
-        : StringUtils.sanitize(customerName),
-    };
+    const cognitoId = req.user?.id;
+let actualDonorId: string | null = null;
 
-    if (!isAnonymous) {
-      donationData.donor = "temp-donor-id";
-    }
+if (!isAnonymous && cognitoId) {
+  console.log('Looking up user with cognitoId:', cognitoId);
+  const user = await User.findOne({ cognitoId });
+  if (user) {
+    actualDonorId = user._id.toString();
+    console.log('✅ Found user in database:', user._id);
+  } else {
+    console.warn('⚠️ User not found in database for cognitoId:', cognitoId);
+  }
+}
 
-    console.log('Creating donation with data:', JSON.stringify(donationData, null, 2));
+// Create donation record
+const donationData: any = {
+  project: projectId,
+  amount: donationAmount,
+  adminFee: adminFee,
+  netAmount: netAmount,
+  transactionId,
+  paymentStatus: PaymentStatus.PENDING,
+  paymentMethod: "sslcommerz",
+  rewardTier: rewardTierId,
+  rewardValue,
+  isAnonymous,
+  donor: actualDonorId, // ✅ Use actual user ID or null for anonymous
+  message: message ? StringUtils.sanitize(message) : undefined,
+  donorInfo: !isAnonymous
+    ? {
+        name: StringUtils.sanitize(customerName),
+        email: customerEmail.toLowerCase(),
+        phone: customerPhone,
+      }
+    : undefined,
+  donorDisplayName: isAnonymous
+    ? "Anonymous Donor"
+    : StringUtils.sanitize(customerName),
+};
 
     const donation = new Donation(donationData);
     await donation.save();

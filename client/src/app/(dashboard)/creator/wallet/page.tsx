@@ -409,7 +409,7 @@ export default function CreatorWalletPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-2">
-                    Routing Number (Optional)
+                    Routing Number
                   </label>
                   <Input
                     value={bankDetails.routingNumber}

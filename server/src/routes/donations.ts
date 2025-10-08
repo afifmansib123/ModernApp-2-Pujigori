@@ -27,4 +27,9 @@ router.post('/:id/message', DonationController.updateDonorMessage);
 router.get('/rewards/pending', DonationController.getPendingRewards);
 router.post('/:id/redeem', DonationController.redeemReward);
 
+//re generate donations
+
+// In donation.routes.ts
+router.post('/:id/regenerate-qr', DonationController.regenerateQR);
+
 export default router;

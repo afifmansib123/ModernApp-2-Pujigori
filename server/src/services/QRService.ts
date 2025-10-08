@@ -6,76 +6,80 @@ class QRService {
   /**
    * Generate QR code for donation with reward information
    */
-  public async generateDonationQR(
-    donation: IDonation,
-    project: IProject,
-    options?: {
-      size?: number;
-      errorCorrectionLevel?: 'L' | 'M' | 'Q' | 'H';
-      margin?: number;
-      color?: {
-        dark?: string;
-        light?: string;
-      };
-    }
-  ): Promise<{
-    qrCodeData: string;
-    qrCodeBuffer: Buffer;
-    qrCodeUrl?: string;
-  }> {
-    try {
-      // Create QR code data
-      const qrData: IQRCodeData = {
-        donationId: donation._id,
-        projectId: donation.project,
-        amount: donation.amount,
-        rewardTier: donation.rewardTier,
-        rewardValue: donation.rewardValue,
-        donorName: donation.isAnonymous 
-          ? donation.donorInfo?.name || 'Anonymous'
-          : 'Registered User', // In real app, you'd get user name
-        createdAt: donation.createdAt.toISOString(),
-        expiresAt: this.calculateExpiryDate(donation.createdAt).toISOString()
-      };
-
-      // Convert to JSON string
-      const qrDataString = JSON.stringify(qrData);
-
-      // Generate QR code as buffer
-      const qrCodeBuffer = await this.generateQRBuffer(qrDataString, options);
-
-      // Upload to S3
-      let qrCodeUrl: string | undefined;
-      try {
-        const uploadResult = await s3Service.uploadFile(
-          {
-            fieldname: 'qrcode',
-            originalname: `donation-${donation._id}-qr.png`,
-            encoding: '7bit',
-            mimetype: 'image/png',
-            buffer: qrCodeBuffer,
-            size: qrCodeBuffer.length
-          },
-          'qrcodes',
-          { makePublic: true }
-        );
-        qrCodeUrl = uploadResult.url;
-      } catch (uploadError) {
-        console.error('Failed to upload QR code to S3:', uploadError);
-        // Continue without S3 URL if upload fails
-      }
-
-      return {
-        qrCodeData: qrDataString,
-        qrCodeBuffer,
-        qrCodeUrl
-      };
-
-    } catch (error) {
-      console.error('QR code generation error:', error);
-      throw new Error('Failed to generate QR code');
-    }
+public async generateDonationQR(
+  donation: IDonation,
+  project: IProject,
+  options?: {
+    size?: number;
+    errorCorrectionLevel?: 'L' | 'M' | 'Q' | 'H';
+    margin?: number;
+    color?: {
+      dark?: string;
+      light?: string;
+    };
   }
+): Promise<{
+  qrCodeData: string;
+  qrCodeBuffer: Buffer;
+  qrCodeUrl?: string;
+}> {
+  try {
+    // ✅ Create a verification URL instead of JSON
+    const verificationUrl = `${process.env.FRONTEND_URL}/verify-reward/${donation._id}`;
+
+    // Keep JSON data for database storage
+    const qrData: IQRCodeData = {
+      donationId: donation._id,
+      projectId: donation.project,
+      amount: donation.amount,
+      rewardTier: donation.rewardTier,
+      rewardValue: donation.rewardValue,
+      donorName: donation.isAnonymous 
+        ? 'Anonymous'
+        : donation.donorInfo?.name || 'Registered User',
+      donorEmail: donation.isAnonymous
+        ? undefined
+        : donation.donorInfo?.email,
+      createdAt: donation.createdAt.toISOString(),
+      expiresAt: this.calculateExpiryDate(donation.createdAt).toISOString()
+    };
+
+    const qrDataString = JSON.stringify(qrData);
+
+    // ✅ Generate QR code with the URL instead of JSON
+    const qrCodeBuffer = await this.generateQRBuffer(verificationUrl, options);
+
+    // Upload to S3
+    let qrCodeUrl: string | undefined;
+    try {
+      const uploadResult = await s3Service.uploadFile(
+        {
+          fieldname: 'qrcode',
+          originalname: `donation-${donation._id}-qr.png`,
+          encoding: '7bit',
+          mimetype: 'image/png',
+          buffer: qrCodeBuffer,
+          size: qrCodeBuffer.length
+        },
+        'qrcodes',
+        { makePublic: true }
+      );
+      qrCodeUrl = uploadResult.url;
+    } catch (uploadError) {
+      console.error('Failed to upload QR code to S3:', uploadError);
+    }
+
+    return {
+      qrCodeData: qrDataString, // Keep JSON for database reference
+      qrCodeBuffer,
+      qrCodeUrl
+    };
+
+  } catch (error) {
+    console.error('QR code generation error:', error);
+    throw new Error('Failed to generate QR code');
+  }
+}
 
   /**
    * Generate QR code for project information

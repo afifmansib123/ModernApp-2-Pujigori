@@ -232,6 +232,13 @@ const nextConfig: NextConfig = {
 
 now reward qr is visibale and readable.
 
+commit 7.4 , 2.5 - first we scanned the qr code , it gave us the json data.
+now first we changed the backend qr service to redirect to an address :
+
+FE url + /varify-reward/[id] -> id of the donation.
+
+created the page to check the rewards there. user can scan and check 
+
 
 
 

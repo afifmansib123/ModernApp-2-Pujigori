@@ -406,9 +406,9 @@ export default function UserDonationsPage() {
 
       {/* QR Code Modal */}
       {showQRModal && selectedDonation && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-md w-full p-6">
-            <div className="flex justify-between items-center mb-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-16 overflow-y-auto">
+          <div className="bg-white rounded-lg max-w-md w-full p-6 mt-24">
+            <div className="flex justify-between items-center mb-4 mt-14">
               <h3 className="text-lg font-semibold">Your Reward QR Code</h3>
               <button
                 onClick={() => setShowQRModal(false)}
@@ -446,21 +446,111 @@ export default function UserDonationsPage() {
                   )}
                 </div>
 
-                <div className="bg-purple-50 rounded-lg p-4">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <p className="text-sm text-purple-600 font-medium">Reward Value</p>
-                      <p className="text-xl font-bold text-purple-900">
-                        ৳{qrData.data.rewardValue}
-                      </p>
+                {/* Reward Details Card */}
+                <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg p-6 border-2 border-purple-200">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Gift className="h-5 w-5 text-purple-600" />
+                    <h4 className="font-bold text-purple-900">Your Reward Voucher</h4>
+                  </div>
+                  
+                  <div className="space-y-3 bg-white rounded-lg p-4">
+                    <div className="flex justify-between items-center border-b pb-2">
+                      <span className="text-sm text-gray-600">Reward Value:</span>
+                      <span className="text-xl font-bold text-green-600">
+                        ৳{qrData.data.rewardValue.toLocaleString()}
+                      </span>
                     </div>
-                    <div className="text-right">
-                      <p className="text-sm text-purple-600 font-medium">Status</p>
-                      <p className="text-sm font-semibold text-purple-900">
-                        {qrData.data.rewardStatus}
-                      </p>
+                    
+                    <div className="flex justify-between items-center border-b pb-2">
+                      <span className="text-sm text-gray-600">Donation Amount:</span>
+                      <span className="font-semibold text-gray-900">
+                        ৳{donations.find((d: any) => d._id === selectedDonation)?.amount.toLocaleString()}
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between items-center border-b pb-2">
+                      <span className="text-sm text-gray-600">Status:</span>
+                      {qrData.data.rewardStatus === "pending" ? (
+                        <span className="px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-700">
+                          ⏳ Ready to Redeem
+                        </span>
+                      ) : qrData.data.rewardStatus === "redeemed" ? (
+                        <span className="px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">
+                          ✓ Already Redeemed
+                        </span>
+                      ) : (
+                        <span className="px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700">
+                          {qrData.data.rewardStatus}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Valid Until:</span>
+                      <span className="text-sm font-medium text-gray-900">
+                        {(() => {
+                          try {
+                            const donation = donations.find((d: any) => d._id === selectedDonation);
+                            const createdDate = new Date(donation?.createdAt);
+                            const expiryDate = new Date(createdDate);
+                            expiryDate.setDate(expiryDate.getDate() + 30);
+                            return expiryDate.toLocaleDateString("en-US", {
+                              year: "numeric",
+                              month: "long",
+                              day: "numeric",
+                            });
+                          } catch {
+                            return "N/A";
+                          }
+                        })()}
+                      </span>
                     </div>
                   </div>
+
+                  {/* Reward Tier Details */}
+                  {(() => {
+                    const donation = donations.find((d: any) => d._id === selectedDonation);
+                    const rewardTierDetails = donation?.rewardTierDetails;
+                    
+                    if (rewardTierDetails) {
+                      return (
+                        <div className="mt-4 bg-white rounded-lg p-4 border border-purple-200">
+                          <h5 className="font-semibold text-purple-900 mb-2">
+                            🎁 {rewardTierDetails.title}
+                          </h5>
+                          <p className="text-sm text-gray-700 mb-3">
+                            {rewardTierDetails.description}
+                          </p>
+                          {rewardTierDetails.items && rewardTierDetails.items.length > 0 && (
+                            <div className="space-y-1">
+                              <p className="text-xs font-medium text-gray-600 mb-1">Includes:</p>
+                              {rewardTierDetails.items.map((item: string, idx: number) => (
+                                <div key={idx} className="flex items-center gap-2 text-sm text-gray-700">
+                                  <span className="text-green-500">✓</span>
+                                  <span>{item}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
+                </div>
+
+                {/* Instructions */}
+                <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                  <h5 className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4" />
+                    How to Redeem
+                  </h5>
+                  <ol className="text-sm text-blue-800 space-y-1 list-decimal list-inside">
+                    <li>Show this QR code to the project creator</li>
+                    <li>They will scan and verify your reward</li>
+                    <li>Collect your physical reward on-site</li>
+                    <li>Status will update to "Redeemed"</li>
+                  </ol>
                 </div>
 
                 <div className="flex gap-2">

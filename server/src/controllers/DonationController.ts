@@ -103,45 +103,47 @@ class DonationController {
    * Get single donation details
    */
 
-  async getDonation(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try {
-      const { id } = req.params;
+// In DonationController.ts - getDonation method
 
-      if (!ValidationUtils.isValidObjectId(id)) {
-        res.status(400).json(ResponseUtils.error('Invalid donation ID'));
-        return;
-      }
+async getDonation(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { id } = req.params;
 
-      const donation = await Donation.findById(id)
-        .populate('project', 'title slug category creator rewardTiers')
-        .select('-__v');
-
-      if (!donation) {
-        res.status(404).json(ResponseUtils.error('Donation not found'));
-        return;
-      }
-
-      // Add reward tier details if applicable
-      let rewardTierDetails = null;
-      if (donation.rewardTier && (donation.project as any)?.rewardTiers) {
-        const project = donation.project as any;
-        rewardTierDetails = project.rewardTiers.id(donation.rewardTier);
-      }
-
-      const donationWithDetails = {
-        ...donation.toObject(),
-        rewardTierDetails
-      };
-
-      res.json(ResponseUtils.success(
-        'Donation retrieved successfully',
-        donationWithDetails
-      ));
-
-    } catch (error) {
-      next(error);
+    if (!ValidationUtils.isValidObjectId(id)) {
+      res.status(400).json(ResponseUtils.error('Invalid donation ID'));
+      return;
     }
+
+    const donation = await Donation.findById(id)
+      .populate('project', 'title slug category creator rewardTiers')
+      .select('-__v');
+
+    if (!donation) {
+      res.status(404).json(ResponseUtils.error('Donation not found'));
+      return;
+    }
+
+    // ✅ Add reward tier details if applicable
+    let rewardTierDetails = null;
+    if (donation.rewardTier && (donation.project as any)?.rewardTiers) {
+      const project = donation.project as any;
+      rewardTierDetails = project.rewardTiers.id(donation.rewardTier);
+    }
+
+    const donationWithDetails = {
+      ...donation.toObject(),
+      rewardTierDetails
+    };
+
+    res.json(ResponseUtils.success(
+      'Donation retrieved successfully',
+      donationWithDetails
+    ));
+
+  } catch (error) {
+    next(error);
   }
+}
 
   /**
    * GET /api/donations/project/:projectId
@@ -615,6 +617,41 @@ class DonationController {
       next(error);
     }
   }
+
+  /*
+  for existing rewards that we already created regenerate the rewards
+  */
+
+  // In DonationController.ts - temporary endpoint
+async regenerateQR(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { id } = req.params;
+
+    const donation = await Donation.findById(id);
+    if (!donation) {
+      res.status(404).json(ResponseUtils.error('Donation not found'));
+      return;
+    }
+
+    const project = await Project.findById(donation.project);
+    if (!project) {
+      res.status(404).json(ResponseUtils.error('Project not found'));
+      return;
+    }
+
+    // Generate new QR with URL
+    const qrResult = await qrService.generateDonationQR(donation, project);
+    donation.qrCodeData = qrResult.qrCodeData;
+    donation.qrCodeUrl = qrResult.qrCodeUrl;
+    await donation.save();
+
+    res.json(ResponseUtils.success('QR code regenerated', {
+      qrCodeUrl: donation.qrCodeUrl
+    }));
+  } catch (error) {
+    next(error);
+  }
+}
 }
 
 export default new DonationController();

@@ -283,6 +283,7 @@ export interface IQRCodeData {
   donorName: string;
   createdAt: string;
   expiresAt?: string;
+  donorEmail?: string;
 }
 
 // API Response Interface

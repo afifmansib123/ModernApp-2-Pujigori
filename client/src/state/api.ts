@@ -882,6 +882,23 @@ export const api = createApi({
       providesTags: ["AdminStats"],
     }),
 
+    // Inside your endpoints in createApi
+
+    // Get available balance for a specific project
+    getProjectBalance: build.query<any, string>({
+      query: (projectId) => `/payment-requests/project/${projectId}/balance`,
+      providesTags: (result, error, projectId) => [
+        { type: "PaymentRequest", id: `balance-${projectId}` },
+        { type: "Donation", id: `project-${projectId}` },
+      ],
+    }),
+
+    // Get balances for all creator's projects
+    getCreatorBalances: build.query<any, void>({
+      query: () => "/payment-requests/creator/balances",
+      providesTags: ["PaymentRequest", "Donation", "Project"],
+    }),
+
     //below is closing tag for all endpoints
   }),
 });
@@ -935,4 +952,6 @@ export const {
   useGetAdminDonationsQuery,
   useGetAdminAnalyticsQuery,
   useGetFinancialReportQuery,
+  useGetProjectBalanceQuery,
+  useGetCreatorBalancesQuery,
 } = api;

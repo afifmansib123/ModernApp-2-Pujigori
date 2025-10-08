@@ -21,184 +21,227 @@ class PaymentController {
    * POST /api/payments/initiate
    * Initialize payment with SSLCommerz
    */
-  async initiatePayment(
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ): Promise<void> {
-    try {
-      const {
-        projectId,
-        amount,
-        rewardTierId,
-        customerName,
-        customerEmail,
-        customerPhone,
-        customerAddress,
-        isAnonymous = false,
-        message,
-      } = req.body;
+async initiatePayment(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const {
+      projectId,
+      amount,
+      rewardTierId,
+      customerName,
+      customerEmail,
+      customerPhone,
+      customerAddress,
+      isAnonymous = false,
+      message,
+    } = req.body;
 
-      // Validate required fields
-      if (!projectId || !amount || !customerName || !customerEmail) {
-        res
-          .status(400)
-          .json(
-            ResponseUtils.error(
-              "Missing required fields: projectId, amount, customerName, customerEmail"
-            )
-          );
-        return;
-      }
+    console.log('=== PAYMENT INITIATION STARTED ===');
+    console.log('Request body:', JSON.stringify(req.body, null, 2));
 
-      // Validate amount
-      if (!sslCommerzService.isValidAmount(amount)) {
-        res
-          .status(400)
-          .json(
-            ResponseUtils.error("Amount must be between 10 and 500,000 BDT")
-          );
-        return;
-      }
-
-      // Validate email and phone
-      if (!ValidationUtils.isValidEmail(customerEmail)) {
-        res.status(400).json(ResponseUtils.error("Invalid email format"));
-        return;
-      }
-
-      if (customerPhone && !ValidationUtils.isValidBDPhone(customerPhone)) {
-        res
-          .status(400)
-          .json(ResponseUtils.error("Invalid Bangladeshi phone number"));
-        return;
-      }
-
-      // Find and validate project
-      const project = await Project.findById(projectId);
-      if (!project) {
-        res.status(404).json(ResponseUtils.error("Project not found"));
-        return;
-      }
-
-      if (!project.canReceiveDonations()) {
-        res
-          .status(400)
-          .json(
-            ResponseUtils.error(
-              "Project is not accepting donations at this time"
-            )
-          );
-        return;
-      }
-
-      // Validate reward tier if specified
-      let rewardTier = null;
-      let rewardValue = 0;
-
-      if (rewardTierId) {
-        rewardTier = project.rewardTiers.find(
-          (tier) => tier._id?.toString() === rewardTierId
+    // Validate required fields
+    if (!projectId || !amount || !customerName || !customerEmail) {
+      res
+        .status(400)
+        .json(
+          ResponseUtils.error(
+            "Missing required fields: projectId, amount, customerName, customerEmail"
+          )
         );
-        if (!rewardTier) {
-          res.status(400).json(ResponseUtils.error("Invalid reward tier"));
-          return;
-        }
-
-        if (amount < rewardTier.minimumAmount) {
-          res
-            .status(400)
-            .json(
-              ResponseUtils.error(
-                `Minimum amount for this reward is ৳${rewardTier.minimumAmount}`
-              )
-            );
-          return;
-        }
-
-        if (
-          rewardTier.maxBackers &&
-          rewardTier.currentBackers >= rewardTier.maxBackers
-        ) {
-          res
-            .status(400)
-            .json(ResponseUtils.error("This reward tier is fully backed"));
-          return;
-        }
-
-        rewardValue = rewardTier.minimumAmount;
-      }
-
-      // Generate unique transaction ID
-      const transactionId = sslCommerzService.generateTransactionId("PG");
-
-      // Create donation record
-      const donationData: any = {
-        project: projectId,
-        amount: sslCommerzService.formatAmount(amount),
-        transactionId,
-        paymentStatus: PaymentStatus.PENDING,
-        paymentMethod: "sslcommerz",
-        rewardTier: rewardTierId,
-        rewardValue,
-        isAnonymous,
-        donor: null as string | null,
-        message: message ? StringUtils.sanitize(message) : undefined,
-        donorInfo: !isAnonymous
-          ? {
-              name: StringUtils.sanitize(customerName),
-              email: customerEmail.toLowerCase(),
-              phone: customerPhone,
-            }
-          : undefined,
-        donorDisplayName: isAnonymous
-          ? "Anonymous Donor"
-          : StringUtils.sanitize(customerName),
-      };
-      if (!isAnonymous) {
-        donationData.donor = "temp-donor-id";
-      }
-
-      const donation = new Donation(donationData);
-      await donation.save();
-
-      // Initialize SSLCommerz payment
-      const paymentData = {
-        transactionId,
-        amount: sslCommerzService.formatAmount(amount),
-        customerName: StringUtils.sanitize(customerName),
-        customerEmail,
-        customerPhone: customerPhone || "01700000000",
-        customerAddress:
-          StringUtils.sanitize(customerAddress) || "Dhaka, Bangladesh",
-        productName: `Donation to ${project.title}`,
-        productCategory: "crowdfunding",
-        successUrl: `${process.env.BASE_URL}/api/payments/success`,
-        failUrl: `${process.env.BASE_URL}/api/payments/fail`,
-        cancelUrl: `${process.env.BASE_URL}/api/payments/cancel`,
-        ipnUrl: `${process.env.BASE_URL}/api/payments/webhook`,
-      };
-
-      const sslResponse = await sslCommerzService.initiatePayment(paymentData);
-
-      // Update donation with session key
-      donation.sessionKey = sslResponse.sessionkey;
-      await donation.save();
-
-      res.json(
-        ResponseUtils.success("Payment initialized successfully", {
-          donationId: donation._id,
-          transactionId,
-          paymentGateway: sslResponse.redirectGatewayURL,
-          sessionKey: sslResponse.sessionkey,
-          gateways: sslResponse.gw,
-        })
-      );
-    } catch (error) {
-      console.error("Payment initiation error:", error);
-      next(error);
+      return;
     }
+
+    // Validate amount
+    if (!sslCommerzService.isValidAmount(amount)) {
+      res
+        .status(400)
+        .json(
+          ResponseUtils.error("Amount must be between 10 and 500,000 BDT")
+        );
+      return;
+    }
+
+    // Validate email and phone
+    if (!ValidationUtils.isValidEmail(customerEmail)) {
+      res.status(400).json(ResponseUtils.error("Invalid email format"));
+      return;
+    }
+
+    if (customerPhone && !ValidationUtils.isValidBDPhone(customerPhone)) {
+      res
+        .status(400)
+        .json(ResponseUtils.error("Invalid Bangladeshi phone number"));
+      return;
+    }
+
+    // Find and validate project
+    const project = await Project.findById(projectId);
+    if (!project) {
+      res.status(404).json(ResponseUtils.error("Project not found"));
+      return;
+    }
+
+    if (!project.canReceiveDonations()) {
+      res
+        .status(400)
+        .json(
+          ResponseUtils.error(
+            "Project is not accepting donations at this time"
+          )
+        );
+      return;
+    }
+
+    console.log('Project found:', project._id, project.title);
+
+    // Validate reward tier if specified
+    let rewardTier = null;
+    let rewardValue = 0;
+
+    if (rewardTierId) {
+      rewardTier = project.rewardTiers.find(
+        (tier) => tier._id?.toString() === rewardTierId
+      );
+      if (!rewardTier) {
+        res.status(400).json(ResponseUtils.error("Invalid reward tier"));
+        return;
+      }
+
+      if (amount < rewardTier.minimumAmount) {
+        res
+          .status(400)
+          .json(
+            ResponseUtils.error(
+              `Minimum amount for this reward is ৳${rewardTier.minimumAmount}`
+            )
+          );
+        return;
+      }
+
+      if (
+        rewardTier.maxBackers &&
+        rewardTier.currentBackers >= rewardTier.maxBackers
+      ) {
+        res
+          .status(400)
+          .json(ResponseUtils.error("This reward tier is fully backed"));
+        return;
+      }
+
+      rewardValue = rewardTier.minimumAmount;
+      console.log('Reward tier selected:', rewardTier.title, rewardValue);
+    }
+
+    // Generate unique transaction ID
+    const transactionId = sslCommerzService.generateTransactionId("PG");
+    console.log('Generated transaction ID:', transactionId);
+
+    // ✅ Calculate amounts BEFORE creating donation
+    const donationAmount = sslCommerzService.formatAmount(amount);
+    const adminFee = Math.round(donationAmount * 0.05);
+    const netAmount = donationAmount - adminFee;
+
+    console.log('Amount breakdown:', {
+      donationAmount,
+      adminFee,
+      netAmount,
+    });
+
+    // Create donation record
+    const donationData: any = {
+      project: projectId,
+      amount: donationAmount,
+      adminFee: adminFee,           // ✅ ADDED
+      netAmount: netAmount,         // ✅ ADDED
+      transactionId,
+      paymentStatus: PaymentStatus.PENDING,
+      paymentMethod: "sslcommerz",
+      rewardTier: rewardTierId,
+      rewardValue,
+      isAnonymous,
+      donor: null as string | null,
+      message: message ? StringUtils.sanitize(message) : undefined,
+      donorInfo: !isAnonymous
+        ? {
+            name: StringUtils.sanitize(customerName),
+            email: customerEmail.toLowerCase(),
+            phone: customerPhone,
+          }
+        : undefined,
+      donorDisplayName: isAnonymous
+        ? "Anonymous Donor"
+        : StringUtils.sanitize(customerName),
+    };
+
+    if (!isAnonymous) {
+      donationData.donor = "temp-donor-id";
+    }
+
+    console.log('Creating donation with data:', JSON.stringify(donationData, null, 2));
+
+    const donation = new Donation(donationData);
+    await donation.save();
+
+    console.log('✅ Donation saved successfully:', {
+      id: donation._id,
+      transactionId: donation.transactionId,
+      amount: donation.amount,
+      adminFee: donation.adminFee,
+      netAmount: donation.netAmount,
+      status: donation.paymentStatus,
+    });
+
+    // Initialize SSLCommerz payment
+    const paymentData = {
+      transactionId,
+      amount: donationAmount,
+      customerName: StringUtils.sanitize(customerName),
+      customerEmail,
+      customerPhone: customerPhone || "01700000000",
+      customerAddress:
+        StringUtils.sanitize(customerAddress) || "Dhaka, Bangladesh",
+      productName: `Donation to ${project.title}`,
+      productCategory: "crowdfunding",
+      successUrl: `${process.env.BASE_URL}/api/payments/success`,
+      failUrl: `${process.env.BASE_URL}/api/payments/fail`,
+      cancelUrl: `${process.env.BASE_URL}/api/payments/cancel`,
+      ipnUrl: `${process.env.BASE_URL}/api/payments/webhook`,
+    };
+
+    console.log('Calling SSLCommerz with:', JSON.stringify(paymentData, null, 2));
+
+    const sslResponse = await sslCommerzService.initiatePayment(paymentData);
+
+    console.log('SSLCommerz response received:', {
+      status: sslResponse.status,
+      sessionkey: sslResponse.sessionkey,
+      GatewayPageURL: sslResponse.GatewayPageURL,
+    });
+
+    // Update donation with session key
+    donation.sessionKey = sslResponse.sessionkey;
+    await donation.save();
+
+    console.log('✅ Donation updated with session key');
+    console.log('=== PAYMENT INITIATION COMPLETED ===\n');
+
+    res.json(
+      ResponseUtils.success("Payment initialized successfully", {
+        donationId: donation._id,
+        transactionId,
+        paymentGateway: sslResponse.redirectGatewayURL,
+        sessionKey: sslResponse.sessionkey,
+        gateways: sslResponse.gw,
+      })
+    );
+  } catch (error) {
+    console.error("❌ Payment initiation error:", error);
+    next(error);
   }
+}
 
   /**
    * POST /api/payments/success

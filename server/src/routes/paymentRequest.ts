@@ -18,6 +18,20 @@ router.get(
   PaymentRequestController.getCreatorPaymentRequests
 );
 
+// 🆕 ADD THESE TWO NEW ROUTES
+router.get(
+  '/creator/balances',
+  creatorMiddleware,
+  PaymentRequestController.getCreatorBalances
+);
+
+router.get(
+  '/project/:projectId/balance',
+  creatorMiddleware,
+  validateObjectId('projectId'),
+  PaymentRequestController.getProjectBalance
+);
+
 router.get(
   '/project/:projectId',
   creatorMiddleware,

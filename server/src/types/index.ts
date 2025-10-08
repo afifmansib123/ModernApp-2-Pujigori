@@ -234,6 +234,7 @@ export interface ISSLCommerzResponse {
     redirect_url: string;
   }[];
   redirectGatewayURL?: string;
+  GatewayPageURL?: string;
 }
 
 // SSLCommerz IPN (Instant Payment Notification) Interface

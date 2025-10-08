@@ -90,17 +90,11 @@ const DonationSchema = new Schema<IDonation>({
     type: Number,
     required: [true, 'Admin fee is required'],
     min: [0, 'Admin fee cannot be negative'],
-    default: function() {
-      return Math.round(this.amount * 0.05); // 5% admin fee
-    }
   },
   netAmount: {
     type: Number,
     required: [true, 'Net amount is required'],
     min: [0, 'Net amount cannot be negative'],
-    default: function() {
-      return this.amount - this.adminFee;
-    }
   },
   paymentStatus: {
     type: String,

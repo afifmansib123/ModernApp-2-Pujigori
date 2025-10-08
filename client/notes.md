@@ -208,6 +208,8 @@ look at state ->api.ts to see all the new RTK query function for admin panel
 
 commit 6.9 - Implemet UI - admin's implementation page of the paymentrequets. not tested yet
 
+commit 6.10 , 5.15 , 2.2 - Creato's Wallet +  fixed Money related calculation.
+
 
 
 

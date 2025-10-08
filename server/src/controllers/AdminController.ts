@@ -2,7 +2,8 @@ import { Request, Response, NextFunction } from 'express';
 import Project from '../models/Project';
 import Donation from '../models/Donation';
 import PaymentRequest from '../models/PaymentRequest';
-import { IAdminStats, PaymentRequestStatus, ProjectStatus, PaymentStatus , IPaymentRequest} from '../types';
+import User from '../models/User';
+import { IAdminStats, PaymentRequestStatus, ProjectStatus, IPaymentRequest } from '../types';
 import { ResponseUtils, CurrencyUtils, DateUtils, ValidationUtils } from '../utils';
 
 class AdminController {
@@ -12,17 +13,123 @@ class AdminController {
    */
   async getDashboard(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { period = '30' } = req.query; // days
+      const { period = '30' } = req.query;
       const startDate = DateUtils.addDays(new Date(), -Number(period));
       const endDate = new Date();
 
-      // Get comprehensive statistics
+      // Helper functions
+      const getRecentActivity = async (limit: number) => {
+        const [recentDonations, recentPaymentRequests] = await Promise.all([
+          Donation.find({ paymentStatus: 'success' })
+            .populate('project', 'title slug')
+            .sort({ createdAt: -1 })
+            .limit(limit / 2)
+            .select('amount project donorDisplayName createdAt'),
+          PaymentRequest.find()
+            .populate('project', 'title slug')
+            .sort({ createdAt: -1 })
+            .limit(limit / 2)
+            .select('requestedAmount project status createdAt')
+        ]);
+
+        const activities = [
+          ...recentDonations.map(d => ({
+            type: 'donation',
+            amount: d.amount,
+            project: d.project,
+            donor: d.donorDisplayName,
+            createdAt: d.createdAt
+          })),
+          ...recentPaymentRequests.map(pr => ({
+            type: 'payment_request',
+            amount: pr.requestedAmount,
+            project: pr.project,
+            status: pr.status,
+            createdAt: pr.createdAt
+          }))
+        ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
+        return activities.slice(0, limit);
+      };
+
+      const getTopProjects = async (limit: number) => {
+        return await Project.aggregate([
+          {
+            $match: {
+              status: { $in: [ProjectStatus.ACTIVE, ProjectStatus.FUNDED] },
+              isActive: true
+            }
+          },
+          {
+            $sort: { currentAmount: -1 }
+          },
+          {
+            $limit: limit
+          },
+          {
+            $project: {
+              title: 1,
+              slug: 1,
+              currentAmount: 1,
+              targetAmount: 1,
+              backerCount: 1,
+              fundingProgress: {
+                $multiply: [
+                  { $divide: ['$currentAmount', '$targetAmount'] },
+                  100
+                ]
+              }
+            }
+          }
+        ]);
+      };
+
+      const getMonthlyStats = async () => {
+        const startOfMonth = new Date();
+        startOfMonth.setDate(1);
+        startOfMonth.setHours(0, 0, 0, 0);
+
+        const [projects, donations, revenue] = await Promise.all([
+          Project.countDocuments({
+            createdAt: { $gte: startOfMonth },
+            isActive: true
+          }),
+          Donation.countDocuments({
+            createdAt: { $gte: startOfMonth },
+            paymentStatus: 'success'
+          }),
+          Donation.aggregate([
+            {
+              $match: {
+                createdAt: { $gte: startOfMonth },
+                paymentStatus: 'success'
+              }
+            },
+            {
+              $group: {
+                _id: null,
+                totalRaised: { $sum: '$amount' },
+                adminFees: { $sum: '$adminFee' }
+              }
+            }
+          ])
+        ]);
+
+        return {
+          newProjects: projects,
+          totalDonations: donations,
+          totalRaised: revenue[0]?.totalRaised || 0,
+          adminFees: revenue[0]?.adminFees || 0
+        };
+      };
+
       const [
         totalProjects,
         activeProjects,
         totalDonations,
         donationStats,
         pendingPaymentRequests,
+        totalUsers,
         recentActivity,
         topProjects,
         monthlyStats
@@ -32,12 +139,29 @@ class AdminController {
           status: ProjectStatus.ACTIVE, 
           isActive: true 
         }),
-        Donation.countDocuments({ paymentStatus: PaymentStatus.SUCCESS }),
-        Donation.getStatistics(startDate, endDate),
+        Donation.countDocuments({ paymentStatus: 'success' }),
+        Donation.aggregate([
+          { 
+            $match: { 
+              paymentStatus: 'success',
+              createdAt: { $gte: startDate, $lte: endDate }
+            } 
+          },
+          {
+            $group: {
+              _id: null,
+              totalAmount: { $sum: '$amount' },
+              totalNetAmount: { $sum: '$netAmount' },
+              totalAdminFee: { $sum: '$adminFee' },
+              count: { $sum: 1 }
+            }
+          }
+        ]),
         PaymentRequest.countDocuments({ status: PaymentRequestStatus.PENDING }),
-        this.getRecentActivity(10),
-        this.getTopProjects(5),
-        this.getMonthlyStats()
+        User.countDocuments(),
+        getRecentActivity(10),
+        getTopProjects(5),
+        getMonthlyStats()
       ]);
 
       const stats: IAdminStats = {
@@ -46,7 +170,7 @@ class AdminController {
         totalRaised: donationStats[0]?.totalAmount || 0,
         totalAdminFees: donationStats[0]?.totalAdminFee || 0,
         totalDonations,
-        totalUsers: 0, // TODO: Get from user model when auth is integrated
+        totalUsers,
         pendingPaymentRequests,
         thisMonthStats: monthlyStats
       };
@@ -88,7 +212,6 @@ class AdminController {
         sortOrder = 'desc'
       } = req.query;
 
-      // Build query
       const query: any = {};
       if (status) {
         query.status = status;
@@ -100,7 +223,6 @@ class AdminController {
         if (maxAmount) query.requestedAmount.$lte = Number(maxAmount);
       }
 
-      // Build sort
       const sortObj: any = {};
       sortObj[sortBy as string] = sortOrder === 'desc' ? -1 : 1;
 
@@ -135,6 +257,18 @@ class AdminController {
     try {
       const { id } = req.params;
       const { notes } = req.body;
+      const cognitoId = req.user?.id;
+
+      if (!cognitoId) {
+        res.status(401).json(ResponseUtils.error('Authentication required'));
+        return;
+      }
+
+      const admin = await User.findOne({ cognitoId });
+      if (!admin) {
+        res.status(404).json(ResponseUtils.error('Admin user not found'));
+        return;
+      }
 
       if (!ValidationUtils.isValidObjectId(id)) {
         res.status(400).json(ResponseUtils.error('Invalid payment request ID'));
@@ -155,10 +289,7 @@ class AdminController {
         return;
       }
 
-      // TODO: Get admin ID from authentication
-      const adminId = 'temp-admin-id';
-
-      await paymentRequest.approve(adminId, notes);
+      await paymentRequest.approve(admin._id.toString(), notes);
 
       res.json(ResponseUtils.success(
         'Payment request approved successfully',
@@ -184,6 +315,18 @@ class AdminController {
     try {
       const { id } = req.params;
       const { reason } = req.body;
+      const cognitoId = req.user?.id;
+
+      if (!cognitoId) {
+        res.status(401).json(ResponseUtils.error('Authentication required'));
+        return;
+      }
+
+      const admin = await User.findOne({ cognitoId });
+      if (!admin) {
+        res.status(404).json(ResponseUtils.error('Admin user not found'));
+        return;
+      }
 
       if (!reason || reason.trim().length === 0) {
         res.status(400).json(ResponseUtils.error(
@@ -211,10 +354,7 @@ class AdminController {
         return;
       }
 
-      // TODO: Get admin ID from authentication
-      const adminId = 'temp-admin-id';
-
-      await paymentRequest.reject(adminId, reason);
+      await paymentRequest.reject(admin._id.toString(), reason);
 
       res.json(ResponseUtils.success(
         'Payment request rejected successfully',
@@ -240,6 +380,18 @@ class AdminController {
     try {
       const { id } = req.params;
       const { notes, transactionReference } = req.body;
+      const cognitoId = req.user?.id;
+
+      if (!cognitoId) {
+        res.status(401).json(ResponseUtils.error('Authentication required'));
+        return;
+      }
+
+      const admin = await User.findOne({ cognitoId });
+      if (!admin) {
+        res.status(404).json(ResponseUtils.error('Admin user not found'));
+        return;
+      }
 
       if (!ValidationUtils.isValidObjectId(id)) {
         res.status(400).json(ResponseUtils.error('Invalid payment request ID'));
@@ -260,15 +412,12 @@ class AdminController {
         return;
       }
 
-      // TODO: Get admin ID from authentication
-      const adminId = 'temp-admin-id';
-
       const finalNotes = [
         notes,
         transactionReference ? `Transaction Reference: ${transactionReference}` : null
       ].filter(Boolean).join('\n');
 
-      await paymentRequest.markAsPaid(adminId, finalNotes);
+      await paymentRequest.markAsPaid(admin._id.toString(), finalNotes);
 
       res.json(ResponseUtils.success(
         'Payment request marked as paid successfully',
@@ -303,7 +452,6 @@ class AdminController {
         includeInactive = true
       } = req.query;
 
-      // Build query
       const query: any = {};
       
       if (status) {
@@ -322,7 +470,6 @@ class AdminController {
         query.isActive = true;
       }
 
-      // Build sort
       const sortObj: any = {};
       if (search) {
         sortObj.score = { $meta: 'textScore' };
@@ -335,15 +482,30 @@ class AdminController {
           .sort(sortObj)
           .skip(skip)
           .limit(Number(limit))
-          .select('-story -risks -updates'), // Exclude large text fields
+          .select('-story -risks -updates'),
         Project.countDocuments(query)
       ]);
 
-      // Add funding statistics
       const projectsWithStats = await Promise.all(
         projects.map(async (project) => {
           const [stats, paymentRequests] = await Promise.all([
-            Donation.getTotalRaised(project._id),
+            Donation.aggregate([
+              { 
+                $match: { 
+                  project: project._id.toString(),
+                  paymentStatus: 'success'
+                }
+              },
+              {
+                $group: {
+                  _id: null,
+                  totalAmount: { $sum: '$amount' },
+                  totalNetAmount: { $sum: '$netAmount' },
+                  totalAdminFee: { $sum: '$adminFee' },
+                  donationCount: { $sum: 1 }
+                }
+              }
+            ]),
             PaymentRequest.countDocuments({ project: project._id })
           ]);
 
@@ -402,7 +564,6 @@ class AdminController {
       const oldStatus = project.status;
       project.status = status;
 
-      // Add admin note about status change
       if (reason) {
         const update = {
           title: `Status Update: ${oldStatus} → ${status}`,
@@ -447,7 +608,6 @@ class AdminController {
         sortOrder = 'desc'
       } = req.query;
 
-      // Build query
       const query: any = {};
       
       if (status) {
@@ -467,11 +627,6 @@ class AdminController {
         if (minAmount) query.amount.$gte = Number(minAmount);
         if (maxAmount) query.amount.$lte = Number(maxAmount);
       }
-
-      // TODO: Add flagged donations logic when implemented
-      // if (flagged === 'true') {
-      //   query.isFlagged = true;
-      // }
 
       const sortObj: any = {};
       sortObj[sortBy as string] = sortOrder === 'desc' ? -1 : 1;
@@ -510,7 +665,169 @@ class AdminController {
       const startDate = DateUtils.addDays(new Date(), -days);
       const endDate = new Date();
 
-      // Get comprehensive analytics
+      // Helper functions
+      const getDonationTrends = async (start: Date, end: Date, group: string) => {
+        const groupId: any = {
+          year: { $year: '$createdAt' },
+          month: { $month: '$createdAt' }
+        };
+
+        if (group === 'day') {
+          groupId.day = { $dayOfMonth: '$createdAt' };
+        } else if (group === 'week') {
+          groupId.week = { $week: '$createdAt' };
+        }
+
+        return await Donation.aggregate([
+          {
+            $match: {
+              createdAt: { $gte: start, $lte: end },
+              paymentStatus: 'success'
+            }
+          },
+          {
+            $group: {
+              _id: groupId,
+              totalAmount: { $sum: '$amount' },
+              count: { $sum: 1 },
+              averageAmount: { $avg: '$amount' }
+            }
+          },
+          {
+            $sort: { '_id.year': 1, '_id.month': 1, '_id.day': 1, '_id.week': 1 }
+          }
+        ]);
+      };
+
+      const getProjectAnalytics = async (start: Date, end: Date) => {
+        return await Project.aggregate([
+          {
+            $match: {
+              createdAt: { $gte: start, $lte: end }
+            }
+          },
+          {
+            $group: {
+              _id: '$status',
+              count: { $sum: 1 },
+              totalTargetAmount: { $sum: '$targetAmount' },
+              totalCurrentAmount: { $sum: '$currentAmount' }
+            }
+          }
+        ]);
+      };
+
+      const getRevenueAnalytics = async (start: Date, end: Date) => {
+        return await Donation.aggregate([
+          {
+            $match: {
+              createdAt: { $gte: start, $lte: end },
+              paymentStatus: 'success'
+            }
+          },
+          {
+            $group: {
+              _id: null,
+              totalRevenue: { $sum: '$amount' },
+              totalAdminFees: { $sum: '$adminFee' },
+              totalNetAmount: { $sum: '$netAmount' },
+              averageDonation: { $avg: '$amount' }
+            }
+          }
+        ]);
+      };
+
+      const getTopCategories = async (start: Date, end: Date) => {
+        return await Donation.aggregate([
+          {
+            $match: {
+              createdAt: { $gte: start, $lte: end },
+              paymentStatus: 'success'
+            }
+          },
+          {
+            $lookup: {
+              from: 'projects',
+              localField: 'project',
+              foreignField: '_id',
+              as: 'projectInfo'
+            }
+          },
+          {
+            $unwind: '$projectInfo'
+          },
+          {
+            $group: {
+              _id: '$projectInfo.category',
+              totalAmount: { $sum: '$amount' },
+              count: { $sum: 1 }
+            }
+          },
+          {
+            $sort: { totalAmount: -1 }
+          }
+        ]);
+      };
+
+      const getTopProjectsByRevenue = async (start: Date, end: Date, limit: number) => {
+        return await Donation.aggregate([
+          {
+            $match: {
+              createdAt: { $gte: start, $lte: end },
+              paymentStatus: 'success'
+            }
+          },
+          {
+            $group: {
+              _id: '$project',
+              totalAmount: { $sum: '$amount' },
+              donationCount: { $sum: 1 }
+            }
+          },
+          {
+            $lookup: {
+              from: 'projects',
+              localField: '_id',
+              foreignField: '_id',
+              as: 'projectInfo'
+            }
+          },
+          {
+            $unwind: '$projectInfo'
+          },
+          {
+            $project: {
+              title: '$projectInfo.title',
+              slug: '$projectInfo.slug',
+              category: '$projectInfo.category',
+              totalAmount: 1,
+              donationCount: 1
+            }
+          },
+          {
+            $sort: { totalAmount: -1 }
+          },
+          {
+            $limit: limit
+          }
+        ]);
+      };
+
+      const getUserGrowthStats = async (start: Date, end: Date) => {
+        const [newUsers, totalUsers] = await Promise.all([
+          User.countDocuments({
+            createdAt: { $gte: start, $lte: end }
+          }),
+          User.countDocuments()
+        ]);
+
+        return {
+          newUsers,
+          totalUsers,
+          activeUsers: 0
+        };
+      };
+
       const [
         donationTrends,
         projectStats,
@@ -519,12 +836,12 @@ class AdminController {
         topProjects,
         userGrowth
       ] = await Promise.all([
-        this.getDonationTrends(startDate, endDate, groupBy as string),
-        this.getProjectAnalytics(startDate, endDate),
-        this.getRevenueAnalytics(startDate, endDate),
-        this.getTopCategories(startDate, endDate),
-        this.getTopProjectsByRevenue(startDate, endDate, 10),
-        this.getUserGrowthStats(startDate, endDate) // TODO: Implement when user model is ready
+        getDonationTrends(startDate, endDate, groupBy as string),
+        getProjectAnalytics(startDate, endDate),
+        getRevenueAnalytics(startDate, endDate),
+        getTopCategories(startDate, endDate),
+        getTopProjectsByRevenue(startDate, endDate, 10),
+        getUserGrowthStats(startDate, endDate)
       ]);
 
       const analytics = {
@@ -572,12 +889,41 @@ class AdminController {
 
       const [
         paymentRequestStats,
-        donationStats,
-        adminFeeBreakdown
+        donationStats
       ] = await Promise.all([
-        PaymentRequest.getStatistics(start, end),
-        Donation.getStatistics(start, end),
-        PaymentRequest.getTotalAdminFees(start, end)
+        PaymentRequest.aggregate([
+          {
+            $match: {
+              createdAt: { $gte: start, $lte: end }
+            }
+          },
+          {
+            $group: {
+              _id: '$status',
+              count: { $sum: 1 },
+              totalRequested: { $sum: '$requestedAmount' },
+              totalAdminFees: { $sum: '$adminFee' },
+              totalNetAmount: { $sum: '$netAmount' }
+            }
+          }
+        ]),
+        Donation.aggregate([
+          {
+            $match: {
+              createdAt: { $gte: start, $lte: end },
+              paymentStatus: 'success'
+            }
+          },
+          {
+            $group: {
+              _id: null,
+              totalAmount: { $sum: '$amount' },
+              totalNetAmount: { $sum: '$netAmount' },
+              totalAdminFee: { $sum: '$adminFee' },
+              donationCount: { $sum: 1 }
+            }
+          }
+        ])
       ]);
 
       const report = {
@@ -591,23 +937,15 @@ class AdminController {
           totalAdminFee: 0,
           donationCount: 0
         },
-        paymentRequests: paymentRequestStats[0] || {
-          byStatus: [],
-          totalCount: 0,
-          totalRequested: 0,
-          totalAdminFees: 0,
-          totalNetAmount: 0
-        },
-        adminFees: adminFeeBreakdown[0] || {
-          totalAdminFees: 0,
-          totalRequests: 0,
-          totalAmountProcessed: 0
+        paymentRequests: {
+          byStatus: paymentRequestStats,
+          totalCount: paymentRequestStats.reduce((sum, stat) => sum + stat.count, 0),
+          totalRequested: paymentRequestStats.reduce((sum, stat) => sum + stat.totalRequested, 0)
         },
         generatedAt: new Date().toISOString()
       };
 
       if (format === 'csv') {
-        // TODO: Generate CSV format
         res.status(501).json(ResponseUtils.error(
           'CSV format not implemented yet'
         ));
@@ -622,273 +960,6 @@ class AdminController {
     } catch (error) {
       next(error);
     }
-  }
-
-  /**
-   * Helper Methods
-   */
-
-  private async getRecentActivity(limit: number = 10) {
-    // Get recent donations and payment requests
-    const [recentDonations, recentPaymentRequests] = await Promise.all([
-      Donation.find({ paymentStatus: PaymentStatus.SUCCESS })
-        .populate('project', 'title slug')
-        .sort({ createdAt: -1 })
-        .limit(limit / 2)
-        .select('amount project donorDisplayName createdAt'),
-      PaymentRequest.find()
-        .populate('project', 'title slug')
-        .sort({ createdAt: -1 })
-        .limit(limit / 2)
-        .select('requestedAmount project status createdAt')
-    ]);
-
-    // Combine and sort by date
-    const activities = [
-      ...recentDonations.map(d => ({
-        type: 'donation',
-        amount: d.amount,
-        project: d.project,
-        donor: d.donorDisplayName,
-        createdAt: d.createdAt
-      })),
-      ...recentPaymentRequests.map(pr => ({
-        type: 'payment_request',
-        amount: pr.requestedAmount,
-        project: pr.project,
-        status: pr.status,
-        createdAt: pr.createdAt
-      }))
-    ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-
-    return activities.slice(0, limit);
-  }
-
-  private async getTopProjects(limit: number = 5) {
-    return await Project.aggregate([
-      {
-        $match: {
-          status: { $in: [ProjectStatus.ACTIVE, ProjectStatus.FUNDED] },
-          isActive: true
-        }
-      },
-      {
-        $sort: { currentAmount: -1 }
-      },
-      {
-        $limit: limit
-      },
-      {
-        $project: {
-          title: 1,
-          slug: 1,
-          currentAmount: 1,
-          targetAmount: 1,
-          backerCount: 1,
-          fundingProgress: {
-            $multiply: [
-              { $divide: ['$currentAmount', '$targetAmount'] },
-              100
-            ]
-          }
-        }
-      }
-    ]);
-  }
-
-  private async getMonthlyStats() {
-    const startOfMonth = new Date();
-    startOfMonth.setDate(1);
-    startOfMonth.setHours(0, 0, 0, 0);
-
-    const [projects, donations, revenue] = await Promise.all([
-      Project.countDocuments({
-        createdAt: { $gte: startOfMonth },
-        isActive: true
-      }),
-      Donation.countDocuments({
-        createdAt: { $gte: startOfMonth },
-        paymentStatus: PaymentStatus.SUCCESS
-      }),
-      Donation.aggregate([
-        {
-          $match: {
-            createdAt: { $gte: startOfMonth },
-            paymentStatus: PaymentStatus.SUCCESS
-          }
-        },
-        {
-          $group: {
-            _id: null,
-            totalRaised: { $sum: '$amount' },
-            adminFees: { $sum: '$adminFee' }
-          }
-        }
-      ])
-    ]);
-
-    return {
-      newProjects: projects,
-      totalDonations: donations,
-      totalRaised: revenue[0]?.totalRaised || 0,
-      adminFees: revenue[0]?.adminFees || 0
-    };
-  }
-
-  private async getDonationTrends(startDate: Date, endDate: Date, groupBy: string) {
-    const groupId: any = {
-      year: { $year: '$createdAt' },
-      month: { $month: '$createdAt' }
-    };
-
-    if (groupBy === 'day') {
-      groupId.day = { $dayOfMonth: '$createdAt' };
-    } else if (groupBy === 'week') {
-      groupId.week = { $week: '$createdAt' };
-    }
-
-    return await Donation.aggregate([
-      {
-        $match: {
-          createdAt: { $gte: startDate, $lte: endDate },
-          paymentStatus: PaymentStatus.SUCCESS
-        }
-      },
-      {
-        $group: {
-          _id: groupId,
-          totalAmount: { $sum: '$amount' },
-          count: { $sum: 1 },
-          averageAmount: { $avg: '$amount' }
-        }
-      },
-      {
-        $sort: { '_id.year': 1, '_id.month': 1, '_id.day': 1, '_id.week': 1 }
-      }
-    ]);
-  }
-
-  private async getProjectAnalytics(startDate: Date, endDate: Date) {
-    return await Project.aggregate([
-      {
-        $match: {
-          createdAt: { $gte: startDate, $lte: endDate }
-        }
-      },
-      {
-        $group: {
-          _id: '$status',
-          count: { $sum: 1 },
-          totalTargetAmount: { $sum: '$targetAmount' },
-          totalCurrentAmount: { $sum: '$currentAmount' }
-        }
-      }
-    ]);
-  }
-
-  private async getRevenueAnalytics(startDate: Date, endDate: Date) {
-    return await Donation.aggregate([
-      {
-        $match: {
-          createdAt: { $gte: startDate, $lte: endDate },
-          paymentStatus: PaymentStatus.SUCCESS
-        }
-      },
-      {
-        $group: {
-          _id: null,
-          totalRevenue: { $sum: '$amount' },
-          totalAdminFees: { $sum: '$adminFee' },
-          totalNetAmount: { $sum: '$netAmount' },
-          averageDonation: { $avg: '$amount' }
-        }
-      }
-    ]);
-  }
-
-  private async getTopCategories(startDate: Date, endDate: Date) {
-    return await Donation.aggregate([
-      {
-        $match: {
-          createdAt: { $gte: startDate, $lte: endDate },
-          paymentStatus: PaymentStatus.SUCCESS
-        }
-      },
-      {
-        $lookup: {
-          from: 'projects',
-          localField: 'project',
-          foreignField: '_id',
-          as: 'projectInfo'
-        }
-      },
-      {
-        $unwind: '$projectInfo'
-      },
-      {
-        $group: {
-          _id: '$projectInfo.category',
-          totalAmount: { $sum: '$amount' },
-          count: { $sum: 1 }
-        }
-      },
-      {
-        $sort: { totalAmount: -1 }
-      }
-    ]);
-  }
-
-  private async getTopProjectsByRevenue(startDate: Date, endDate: Date, limit: number) {
-    return await Donation.aggregate([
-      {
-        $match: {
-          createdAt: { $gte: startDate, $lte: endDate },
-          paymentStatus: PaymentStatus.SUCCESS
-        }
-      },
-      {
-        $group: {
-          _id: '$project',
-          totalAmount: { $sum: '$amount' },
-          donationCount: { $sum: 1 }
-        }
-      },
-      {
-        $lookup: {
-          from: 'projects',
-          localField: '_id',
-          foreignField: '_id',
-          as: 'projectInfo'
-        }
-      },
-      {
-        $unwind: '$projectInfo'
-      },
-      {
-        $project: {
-          title: '$projectInfo.title',
-          slug: '$projectInfo.slug',
-          category: '$projectInfo.category',
-          totalAmount: 1,
-          donationCount: 1
-        }
-      },
-      {
-        $sort: { totalAmount: -1 }
-      },
-      {
-        $limit: limit
-      }
-    ]);
-  }
-
-  private async getUserGrowthStats(startDate: Date, endDate: Date) {
-    // TODO: Implement when user model is integrated
-    return {
-      newUsers: 0,
-      totalUsers: 0,
-      activeUsers: 0
-    };
   }
 }
 

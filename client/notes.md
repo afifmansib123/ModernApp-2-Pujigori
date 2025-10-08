@@ -218,6 +218,9 @@ request for a withdrawal. if accepter , the wallet of creator decreases.
 We will move on to Admin Pnale functions from here.
 
 
+Commit 7.1 , 2.3 - Fixed Admin Controllers and Dashboard of admin now working
+
+
 
 
 

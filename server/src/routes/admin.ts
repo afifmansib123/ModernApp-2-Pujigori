@@ -1,12 +1,11 @@
 import { Router } from 'express';
 import AdminController from '../controllers/AdminController';
-// import { adminMiddleware } from '../middleware/auth'; // TODO: Implement admin auth middleware
+import { adminMiddleware } from '../middleware/auth';
 
 const router = Router();
 
 // All admin routes require admin authentication
-// In production, uncomment this middleware
-// router.use(adminMiddleware);
+router.use(adminMiddleware);
 
 // Dashboard and overview
 router.get('/dashboard', AdminController.getDashboard);

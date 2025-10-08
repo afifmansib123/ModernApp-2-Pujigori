@@ -13,185 +13,174 @@ class PaymentRequestController {
    * Create payment request (creator only)
    * this payment request is the creator of the project sending a request to the masteradmin for withdrawal of money
    */
-  async createPaymentRequest(
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ): Promise<void> {
-    try {
-      const { projectId, requestedAmount, bankDetails } = req.body;
-      const cognitoId = req.user?.id;
+async createPaymentRequest(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const { projectId, requestedAmount, bankDetails } = req.body;
+    const cognitoId = req.user?.id;
 
-      if (!cognitoId) {
-        res.status(401).json(ResponseUtils.error("Authentication required"));
-        return;
-      }
-
-      // Get MongoDB user ID from Cognito ID
-      const user = await User.findOne({ cognitoId });
-      if (!user) {
-        res.status(404).json(ResponseUtils.error("User not found"));
-        return;
-      }
-
-      // Validate project
-      if (!ValidationUtils.isValidObjectId(projectId)) {
-        res.status(400).json(ResponseUtils.error("Invalid project ID"));
-        return;
-      }
-
-      const project = await Project.findById(projectId);
-      if (!project) {
-        res.status(404).json(ResponseUtils.error("Project not found"));
-        return;
-      }
-
-      // Check project ownership
-      if (project.creator.toString() !== user._id.toString()) {
-        res
-          .status(403)
-          .json(ResponseUtils.error("You do not own this project"));
-        return;
-      }
-
-      // Get total raised and available amount
-      const donationStats = await Donation.aggregate([
-        {
-          $match: {
-            project: { $in: projectId },
-            paymentStatus: "success",
-          },
-        },
-        {
-          $group: {
-            _id: "$project",
-            totalRaised: { $sum: "$amount" },
-            totalNetAmount: { $sum: "$netAmount" },
-            totalAdminFee: { $sum: "$adminFee" },
-            donationCount: { $sum: 1 },
-          },
-        },
-      ]);
-
-      // 🔍 ADD THIS TEST AGGREGATION
-      console.log("🧪 TESTING: Running raw aggregation...");
-      const testAgg = await Donation.aggregate([
-        {
-          $match: {
-            _id: new mongoose.Types.ObjectId("68e5f21996f5b99feb9f98be"),
-          },
-        },
-        {
-          $project: {
-            _id: 1,
-            project: 1,
-            amount: 1,
-            adminFee: 1,
-            netAmount: 1,
-            paymentStatus: 1,
-          },
-        },
-      ]);
-      console.log(
-        "🧪 Test aggregation result:",
-        JSON.stringify(testAgg, null, 2)
-      );
-
-      console.log(
-        "🔍 MATCHED DONATIONS:",
-        JSON.stringify(donationStats, null, 2)
-      );
-
-      const availableAmount = donationStats[0]?.totalNetAmount || 0;
-
-      // Validate requested amount
-      if (requestedAmount <= 0) {
-        res
-          .status(400)
-          .json(ResponseUtils.error("Requested amount must be greater than 0"));
-        return;
-      }
-
-      if (requestedAmount > availableAmount) {
-        res
-          .status(400)
-          .json(
-            ResponseUtils.error(
-              `Requested amount (BDT ${requestedAmount}) exceeds available funds (BDT ${availableAmount})`
-            )
-          );
-        return;
-      }
-
-      // Check for pending requests
-      const pendingRequest = await PaymentRequest.findOne({
-        project: projectId,
-        status: PaymentRequestStatus.PENDING,
-      });
-
-      if (pendingRequest) {
-        res
-          .status(400)
-          .json(
-            ResponseUtils.error(
-              "You already have a pending payment request for this project"
-            )
-          );
-        return;
-      }
-
-      // Validate bank details
-      if (
-        !bankDetails.accountHolder ||
-        !bankDetails.bankName ||
-        !bankDetails.accountNumber ||
-        !bankDetails.branchName
-      ) {
-        res
-          .status(400)
-          .json(
-            ResponseUtils.error(
-              "Complete bank details required: accountHolder, bankName, accountNumber, branchName"
-            )
-          );
-        return;
-      }
-
-      // Calculate admin fee (already deducted in donations, but track it)
-      const adminFeeDeducted = donationStats[0]?.totalAdminFee || 0;
-
-      // Create payment request
-      const paymentRequest = new PaymentRequest({
-        creator: user._id,
-        project: projectId,
-        requestedAmount,
-        adminFeeDeducted,
-        netAmount: requestedAmount, // Creator requests the net amount
-        status: PaymentRequestStatus.PENDING,
-        bankDetails: {
-          accountHolder: bankDetails.accountHolder.trim(),
-          bankName: bankDetails.bankName.trim(),
-          accountNumber: bankDetails.accountNumber.trim(),
-          routingNumber: bankDetails.routingNumber?.trim() || "",
-          branchName: bankDetails.branchName.trim(),
-        },
-      });
-
-      await paymentRequest.save();
-
-      res.status(201).json(
-        ResponseUtils.success(
-          "Payment request submitted successfully. Admin will review your request.",
-          {
-            paymentRequest: paymentRequest.toObject(),
-            availableAmount,
-          }
-        )
-      );
-    } catch (error) {
-      next(error);
+    if (!cognitoId) {
+      res.status(401).json(ResponseUtils.error("Authentication required"));
+      return;
     }
+
+    const user = await User.findOne({ cognitoId });
+    if (!user) {
+      res.status(404).json(ResponseUtils.error("User not found"));
+      return;
+    }
+
+    if (!ValidationUtils.isValidObjectId(projectId)) {
+      res.status(400).json(ResponseUtils.error("Invalid project ID"));
+      return;
+    }
+
+    const project = await Project.findById(projectId);
+    if (!project) {
+      res.status(404).json(ResponseUtils.error("Project not found"));
+      return;
+    }
+
+    if (project.creator.toString() !== user._id.toString()) {
+      res
+        .status(403)
+        .json(ResponseUtils.error("You do not own this project"));
+      return;
+    }
+
+    // ✅ FIXED: Get total raised and available amount
+    const donationStats = await Donation.aggregate([
+      {
+        $match: {
+          project: projectId.toString(),  // ✅ Convert to string
+          paymentStatus: "success",
+        },
+      },
+      {
+        $group: {
+          _id: "$project",
+          totalRaised: { $sum: "$amount" },
+          totalNetAmount: { $sum: "$netAmount" },
+          totalAdminFee: { $sum: "$adminFee" },
+          donationCount: { $sum: 1 },
+        },
+      },
+    ]);
+
+    const totalNetAmount = donationStats[0]?.totalNetAmount || 0;
+
+    // ✅ Check existing payment requests
+    const existingRequests = await PaymentRequest.aggregate([
+      {
+        $match: {
+          project: projectId.toString(),  // ✅ Convert to string
+          status: {
+            $in: [PaymentRequestStatus.APPROVED, PaymentRequestStatus.PAID],
+          },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalRequested: { $sum: "$requestedAmount" },
+        },
+      },
+    ]);
+
+    const alreadyRequested = existingRequests[0]?.totalRequested || 0;
+    const availableAmount = Math.max(0, totalNetAmount - alreadyRequested);
+
+    // Validate requested amount
+    if (requestedAmount <= 0) {
+      res
+        .status(400)
+        .json(ResponseUtils.error("Requested amount must be greater than 0"));
+      return;
+    }
+
+    if (requestedAmount > availableAmount) {
+      res
+        .status(400)
+        .json(
+          ResponseUtils.error(
+            `Requested amount (BDT ${requestedAmount}) exceeds available funds (BDT ${availableAmount})`
+          )
+        );
+      return;
+    }
+
+    // Check for pending requests
+    const pendingRequest = await PaymentRequest.findOne({
+      project: projectId,
+      status: PaymentRequestStatus.PENDING,
+    });
+
+    if (pendingRequest) {
+      res
+        .status(400)
+        .json(
+          ResponseUtils.error(
+            "You already have a pending payment request for this project"
+          )
+        );
+      return;
+    }
+
+    // Validate bank details
+    if (
+      !bankDetails.accountHolder ||
+      !bankDetails.bankName ||
+      !bankDetails.accountNumber ||
+      !bankDetails.branchName
+    ) {
+      res
+        .status(400)
+        .json(
+          ResponseUtils.error(
+            "Complete bank details required: accountHolder, bankName, accountNumber, branchName"
+          )
+        );
+      return;
+    }
+
+    const adminFeeDeducted = donationStats[0]?.totalAdminFee || 0;
+
+    // Create payment request
+    const paymentRequest = new PaymentRequest({
+      creator: user._id,
+      project: projectId,
+      requestedAmount,
+      adminFeeDeducted,
+      netAmount: requestedAmount,
+      status: PaymentRequestStatus.PENDING,
+      bankDetails: {
+        accountHolder: bankDetails.accountHolder.trim(),
+        bankName: bankDetails.bankName.trim(),
+        accountNumber: bankDetails.accountNumber.trim(),
+        routingNumber: bankDetails.routingNumber?.trim() || "",
+        branchName: bankDetails.branchName.trim(),
+      },
+    });
+
+    await paymentRequest.save();
+
+    res.status(201).json(
+      ResponseUtils.success(
+        "Payment request submitted successfully. Admin will review your request.",
+        {
+          paymentRequest: paymentRequest.toObject(),
+          availableAmount,
+        }
+      )
+    );
+  } catch (error) {
+    console.error("Create payment request error:", error);
+    next(error);
   }
+}
 
   /**
    * GET /api/payment-requests/project/:projectId

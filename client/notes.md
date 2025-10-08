@@ -208,7 +208,14 @@ look at state ->api.ts to see all the new RTK query function for admin panel
 
 commit 6.9 - Implemet UI - admin's implementation page of the paymentrequets. not tested yet
 
-commit 6.10 , 5.15 , 2.2 - Creato's Wallet +  fixed Money related calculation.
+commit 6.10 , 5.15 , 2.2 - Creato's Wallet +  fixed Money related calculation -> Check code changes.
+
+
+Commit 7.00 -  ***End of Admin and Creators Payment's Major Functions **** - so far the creators can create the 
+projects. after getting donations , admin automatically recieve 5% , afterward's creator uses his account to 
+request for a withdrawal. if accepter , the wallet of creator decreases.
+
+We will move on to Admin Pnale functions from here.
 
 
 

@@ -239,6 +239,8 @@ FE url + /varify-reward/[id] -> id of the donation.
 
 created the page to check the rewards there. user can scan and check 
 
+commit 8.0 - basic search function page called marketplace - check code
+
 
 
 

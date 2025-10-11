@@ -241,6 +241,8 @@ created the page to check the rewards there. user can scan and check
 
 commit 8.0 - basic search function page called marketplace - check code
 
+commit 8.1 - Advanced Search : Category page / category search page. - check code
+
 
 
 

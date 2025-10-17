@@ -27,4 +27,7 @@ router.get('/donations', AdminController.getDonations);
 // Reports
 router.get('/reports/financial', AdminController.getFinancialReport);
 
+//delete users 
+router.delete('/users/:userId', AdminController.deleteUser);
+
 export default router;

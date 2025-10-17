@@ -961,6 +961,57 @@ class AdminController {
       next(error);
     }
   }
+
+  /**
+ * DELETE /api/admin/users/:userId
+ * Permanently delete a user
+ */
+/**
+ * DELETE /api/admin/users/:userId
+ * Permanently delete a user
+ */
+async deleteUser(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { userId } = req.params;
+
+    if (!ValidationUtils.isValidObjectId(userId)) {
+      res.status(400).json(ResponseUtils.error('Invalid user ID'));
+      return;
+    }
+
+    const user = await User.findById(userId);
+    
+    if (!user) {
+      res.status(404).json(ResponseUtils.error('User not found'));
+      return;
+    }
+
+    // Prevent deleting admins
+    if (user.role === 'admin') {
+      res.status(403).json(ResponseUtils.error('Cannot delete admin users'));
+      return;
+    }
+
+    // Optional: Check if user has created projects
+    const projectCount = await Project.countDocuments({ creator: userId });
+
+    if (projectCount > 0) {
+      res.status(400).json(
+        ResponseUtils.error(
+          `Cannot delete user with ${projectCount} active projects. Please delete or reassign projects first.`
+        )
+      );
+      return;
+    }
+
+    // Permanently delete user
+    await User.findByIdAndDelete(userId);
+
+    res.json(ResponseUtils.success('User deleted permanently'));
+  } catch (error) {
+    next(error);
+  }
+}
 }
 
 export default new AdminController();

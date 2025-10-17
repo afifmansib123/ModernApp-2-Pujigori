@@ -419,48 +419,38 @@ class ProjectController {
    * Delete/deactivate project (requires authentication and ownership)
    */
 
-  async deleteProject(
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ): Promise<void> {
-    try {
-      const { id } = req.params;
+async deleteProject(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const { id } = req.params;
 
-      if (!ValidationUtils.isValidObjectId(id)) {
-        res.status(400).json(ResponseUtils.error("Invalid project ID"));
-        return;
-      }
-
-      const project = await Project.findById(id);
-
-      if (!project) {
-        res.status(404).json(ResponseUtils.error("Project not found"));
-        return;
-      }
-
-      // Check if project has donations
-      const donationCount = await Donation.countDocuments({
-        project: id,
-        paymentStatus: "success",
-      });
-
-      if (donationCount > 0) {
-        // Soft delete - deactivate instead of removing
-        project.isActive = false;
-        project.status = ProjectStatus.CANCELLED;
-        await project.save();
-
-        res.json(ResponseUtils.success("Project deactivated successfully"));
-      } else {
-        // Hard delete if no donations
-        await Project.findByIdAndDelete(id);
-        res.json(ResponseUtils.success("Project deleted successfully"));
-      }
-    } catch (error) {
-      next(error);
+    if (!ValidationUtils.isValidObjectId(id)) {
+      res.status(400).json(ResponseUtils.error("Invalid project ID"));
+      return;
     }
+
+    const project = await Project.findById(id);
+
+    if (!project) {
+      res.status(404).json(ResponseUtils.error("Project not found"));
+      return;
+    }
+
+    // ✅ ALWAYS PERMANENTLY DELETE - No soft delete anymore
+    await Project.findByIdAndDelete(id);
+
+    res.json(
+      ResponseUtils.success("Project deleted permanently", {
+        deletedId: id,
+      })
+    );
+  } catch (error) {
+    next(error);
   }
+}
 
   /**
    * POST /api/projects/:id/updates

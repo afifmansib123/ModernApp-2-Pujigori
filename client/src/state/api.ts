@@ -271,6 +271,17 @@ export const api = createApi({
       providesTags: ["PaymentRequest"],
     }),
 
+    // delete users permanatly
+
+    // Add this to your endpoints in createApi
+    deleteUser: build.mutation<any, string>({
+      query: (userId) => ({
+        url: `/admin/users/${userId}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["User"],
+    }),
+
     /* ----------------------------Project Related Endpoints--------------------------------------------*/
 
     // get all projects
@@ -954,4 +965,5 @@ export const {
   useGetFinancialReportQuery,
   useGetProjectBalanceQuery,
   useGetCreatorBalancesQuery,
+  useDeleteUserMutation,
 } = api;

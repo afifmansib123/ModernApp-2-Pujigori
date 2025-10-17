@@ -28,6 +28,7 @@ import {
   CreditCard,
   LogOut,
   Bookmark,
+  Wallet,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -49,51 +50,39 @@ interface AppSidebarProps {
 const navigationConfig : {
   [key in "user" | "creator" | "admin"]: {
     main: Array<{ name: string; href: string; icon: any }>;
-    financial?: Array<{ name: string; href: string; icon: any }>; // Make optional
+    financial?: Array<{ name: string; href: string; icon: any }>;
     settings: Array<{ name: string; href: string; icon: any }>;
   };
 } = {
   user: {
     main: [
-      { name: "Discover", href: "/user/dashboard", icon: Home },
-      { name: "My Donations", href: "/user/donations", icon: Heart },
-      { name: "Saved Projects", href: "/user/saved", icon: Bookmark },
+      { name: "Dashboard", href: "/user/dashboard", icon: Home },
+      { name: "Browse Projects", href: "/user/projects", icon: FolderKanban },
+      { name: "My Wallet", href: "/user/wallet", icon: Wallet },
     ],
-    settings: [
-      { name: "Profile", href: "/user/profile", icon: User },
-      { name: "Settings", href: "/user/settings", icon: Settings },
-    ],
+    settings: [],
   },
   creator: {
     main: [
       { name: "Dashboard", href: "/creator/dashboard", icon: LayoutDashboard },
       { name: "My Projects", href: "/creator/projects", icon: FolderKanban },
       { name: "Create Project", href: "/creator/create", icon: PlusCircle },
-      { name: "Analytics", href: "/creator/analytics", icon: BarChart3 },
     ],
     financial: [
-      { name: "Payment Requests", href: "/creator/payments", icon: DollarSign },
-      { name: "Transactions", href: "/creator/transactions", icon: CreditCard },
+      { name: "Wallet", href: "/creator/wallet", icon: Wallet },
     ],
-    settings: [
-      { name: "Profile", href: "/creator/profile", icon: User },
-      { name: "Settings", href: "/creator/settings", icon: Settings },
-    ],
+    settings: [],
   },
   admin: {
     main: [
       { name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
       { name: "All Projects", href: "/admin/projects", icon: FolderKanban },
       { name: "Users", href: "/admin/users", icon: Users },
-      { name: "Donations", href: "/admin/donations", icon: Heart },
     ],
     financial: [
       { name: "Payment Approvals", href: "/admin/payments", icon: CreditCard },
-      { name: "Reports", href: "/admin/reports", icon: FileText },
     ],
-    settings: [
-      { name: "Settings", href: "/admin/settings", icon: Settings },
-    ],
+    settings: [],
   },
 };
 
@@ -151,7 +140,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
         </SidebarGroup>
 
         {/* Financial Section (for creator/admin) */}
-        {navigation.financial  && (
+        {navigation.financial && navigation.financial.length > 0 && (
           <SidebarGroup>
             <SidebarGroupLabel>Financial</SidebarGroupLabel>
             <SidebarGroupContent>
@@ -175,28 +164,30 @@ export function AppSidebar({ user }: AppSidebarProps) {
           </SidebarGroup>
         )}
 
-        {/* Settings Section */}
-        <SidebarGroup>
-          <SidebarGroupLabel>Account</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {navigation.settings.map((item) => {
-                const Icon = item.icon;
-                const isActive = pathname === item.href;
-                return (
-                  <SidebarMenuItem key={item.name}>
-                    <SidebarMenuButton asChild isActive={isActive}>
-                      <Link href={item.href}>
-                        <Icon className="h-4 w-4" />
-                        <span>{item.name}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {/* Settings Section - only show if there are settings items */}
+        {navigation.settings && navigation.settings.length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Account</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {navigation.settings.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = pathname === item.href;
+                  return (
+                    <SidebarMenuItem key={item.name}>
+                      <SidebarMenuButton asChild isActive={isActive}>
+                        <Link href={item.href}>
+                          <Icon className="h-4 w-4" />
+                          <span>{item.name}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
+                })}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
 
       <SidebarFooter className="border-t">

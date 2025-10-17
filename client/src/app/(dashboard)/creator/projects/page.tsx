@@ -301,17 +301,6 @@ export default function AllProjectsPage() {
                             View
                           </Link>
                         </Button>
-                        <Button
-                          variant="default"
-                          size="sm"
-                          className="flex-1"
-                          asChild
-                        >
-                          <Link href={`/creator/projects/${project._id}/edit`}>
-                            <Edit className="h-3 w-3 mr-1" />
-                            Edit
-                          </Link>
-                        </Button>
                       </div>
                     </div>
                   </div>

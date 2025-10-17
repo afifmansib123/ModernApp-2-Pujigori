@@ -64,37 +64,37 @@ const HeroSection = () => {
   const circleImages = [
     { 
       id: 1, 
-      src: "/api/placeholder/120/120", 
+      src: "/pic1.png", 
       alt: "Healthcare",
       angle: 0 // Top (12 o'clock)
     },
     { 
       id: 2, 
-      src: "/api/placeholder/120/120", 
+      src: "/pic2.png", 
       alt: "Global Network",
       angle: 60 // Top-right (2 o'clock)
     },
     { 
       id: 3, 
-      src: "/api/placeholder/120/120", 
+      src: "/pic3.png", 
       alt: "Business Analytics",
       angle: 120 // Bottom-right (4 o'clock)
     },
     { 
       id: 4, 
-      src: "/api/placeholder/120/120", 
+      src: "/pic4.png", 
       alt: "Education",
       angle: 180 // Bottom (6 o'clock)
     },
     { 
       id: 5, 
-      src: "/api/placeholder/120/120", 
+      src: "/pic5.png", 
       alt: "Investment",
       angle: 240 // Bottom-left (8 o'clock)
     },
     { 
       id: 6, 
-      src: "/api/placeholder/120/120", 
+      src: "/pic6.png", 
       alt: "Travel",
       angle: 300 // Top-left (10 o'clock)
     }

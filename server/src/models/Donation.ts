@@ -76,8 +76,14 @@ const DonationSchema = new Schema<IDonation>({
     }
   },
   project: {
-    type: String,
+    type: mongoose.Schema.Types.ObjectId,  // ✅ CHANGED from String
+    ref: 'Project',                         // ✅ ADDED reference
     required: [true, 'Project ID is required'],
+    index: true
+  },
+  projectCreator: {  // ✅ NEW FIELD
+    type: String,
+    required: true,
     index: true
   },
   amount: {

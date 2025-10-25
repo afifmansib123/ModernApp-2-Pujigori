@@ -79,7 +79,7 @@ async initiatePayment(
     }
 
     // Find and validate project
-    const project = await Project.findById(projectId);
+    const project = await Project.findById(projectId).populate('creator', 'cognitoId');
     if (!project) {
       res.status(404).json(ResponseUtils.error("Project not found"));
       return;
@@ -166,9 +166,17 @@ if (!isAnonymous && cognitoId) {
   }
 }
 
+// Find the user by MongoDB _id to get their cognitoId
+const creatorUser = await User.findById(project.creator);
+if (!creatorUser) {
+  res.status(404).json(ResponseUtils.error("Project creator not found"));
+  return;
+}
+
 // Create donation record
 const donationData: any = {
   project: projectId,
+  projectCreator: creatorUser.cognitoId, // ✅ Use cognitoId from User
   amount: donationAmount,
   adminFee: adminFee,
   netAmount: netAmount,
@@ -178,7 +186,7 @@ const donationData: any = {
   rewardTier: rewardTierId,
   rewardValue,
   isAnonymous,
-  donor: actualDonorId, // ✅ Use actual user ID or null for anonymous
+  donor: actualDonorId,
   message: message ? StringUtils.sanitize(message) : undefined,
   donorInfo: !isAnonymous
     ? {

@@ -1,45 +1,45 @@
-import { Document , Model  } from 'mongoose';
+import { Document, Model } from "mongoose";
 
 export enum ProjectStatus {
-  DRAFT = 'draft',
-  ACTIVE = 'active',
-  FUNDED = 'funded',
-  EXPIRED = 'expired',
-  CANCELLED = 'cancelled'
+  DRAFT = "draft",
+  ACTIVE = "active",
+  FUNDED = "funded",
+  EXPIRED = "expired",
+  CANCELLED = "cancelled",
 }
 
 export enum ProjectCategory {
-  TECHNOLOGY = 'technology',
-  ARTS = 'arts',
-  HEALTH = 'health',
-  EDUCATION = 'education',
-  ENVIRONMENT = 'environment',
-  COMMUNITY = 'community',
-  BUSINESS = 'business',
-  CHARITY = 'charity', 
-  OTHER = 'other',
+  TECHNOLOGY = "technology",
+  ARTS = "arts",
+  HEALTH = "health",
+  EDUCATION = "education",
+  ENVIRONMENT = "environment",
+  COMMUNITY = "community",
+  BUSINESS = "business",
+  CHARITY = "charity",
+  OTHER = "other",
 }
 
 export enum PaymentStatus {
-  PENDING = 'pending',
-  PROCESSING = 'processing',
-  SUCCESS = 'success',
-  FAILED = 'failed',
-  CANCELLED = 'cancelled',
-  REFUNDED = 'refunded'
+  PENDING = "pending",
+  PROCESSING = "processing",
+  SUCCESS = "success",
+  FAILED = "failed",
+  CANCELLED = "cancelled",
+  REFUNDED = "refunded",
 }
 
 export enum PaymentRequestStatus {
-  PENDING = 'pending',
-  APPROVED = 'approved',
-  REJECTED = 'rejected',
-  PAID = 'paid'
+  PENDING = "pending",
+  APPROVED = "approved",
+  REJECTED = "rejected",
+  PAID = "paid",
 }
 
 export enum RewardRedemptionStatus {
-  PENDING = 'pending',
-  REDEEMED = 'redeemed',
-  EXPIRED = 'expired'
+  PENDING = "pending",
+  REDEEMED = "redeemed",
+  EXPIRED = "expired",
 }
 
 // User Interface (placeholder for your auth system)
@@ -56,7 +56,7 @@ export interface IUser {
 // Reward Tier Interface
 export interface IRewardTier {
   _id?: string;
-  id?: string; 
+  id?: string;
   title: string;
   description: string;
   minimumAmount: number; // in BDT
@@ -65,7 +65,6 @@ export interface IRewardTier {
   estimatedDelivery: Date;
   isActive: boolean;
   items: string[]; // Array of reward items/benefits
-  
 }
 
 // Project Interface
@@ -114,7 +113,8 @@ export interface IProjectUpdate {
 export interface IDonation extends Document {
   _id: string;
   donor: string; // User ID (can be anonymous)
-  project: string; // Project ID
+  project: string | IProject; // ✅ Changed: Can be string OR populated Project
+  projectCreator: string; // ✅ NEW: cognitoId of project creator
   amount: number; // Original donation amount in BDT
   adminFee: number; // 5% admin fee
   netAmount: number; // Amount after admin fee
@@ -150,7 +150,10 @@ export interface IDonation extends Document {
 }
 
 export interface IDonationModel extends Model<IDonation> {
-  findByProject(projectId: string, status?: PaymentStatus): Promise<IDonation[]>;
+  findByProject(
+    projectId: string,
+    status?: PaymentStatus
+  ): Promise<IDonation[]>;
   findSuccessful(): Promise<IDonation[]>;
   getTotalRaised(projectId: string): Promise<any[]>;
   getStatistics(startDate?: Date, endDate?: Date): Promise<any[]>;
@@ -178,7 +181,7 @@ export interface IPaymentRequest extends Document {
   processedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
-  
+
   // Instance methods
   canBeApproved(): boolean;
   canBeRejected(): boolean;
@@ -195,8 +198,6 @@ export interface IPaymentRequestModel extends Model<IPaymentRequest> {
   findByProject(projectId: string): Promise<IPaymentRequest[]>;
   findByCreator(creatorId: string): Promise<IPaymentRequest[]>;
 }
-
-
 
 // SSLCommerz Payment Data Interface
 export interface ISSLCommerzPayment {
@@ -340,7 +341,7 @@ export interface IPagination {
   page: number;
   limit: number;
   sort?: string;
-  sortOrder?: 'asc' | 'desc';
+  sortOrder?: "asc" | "desc";
   search?: string;
   filters?: Record<string, any>;
 }

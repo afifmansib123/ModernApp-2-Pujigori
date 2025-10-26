@@ -245,6 +245,8 @@ commit 8.1 - Advanced Search : Category page / category search page. - check cod
 
 Commit 8.2 - project details page done - check code
 
+commit 8.3 - 8.5 - Minor fixes in logics. look at code.
+
 
 
 

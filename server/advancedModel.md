@@ -78,7 +78,7 @@ ProjectSchema.pre('save', function(next) {
 - Only creates slug if one doesn't exist
 
 **Other hooks in your code:**
-- Calculate 5% admin fee automatically
+- Calculate 3% admin fee automatically
 - Update project status based on dates and funding
 
 ## 5. Instance Methods

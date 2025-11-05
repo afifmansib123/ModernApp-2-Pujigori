@@ -297,7 +297,7 @@ ProjectSchema.pre('save', function(next) {
 // Pre-save middleware to calculate admin fee
 ProjectSchema.pre('save', function(next) {
   if (this.isModified('currentAmount')) {
-    this.adminFeeAmount = Math.round(this.currentAmount * 0.05); // 5% admin fee
+    this.adminFeeAmount = Math.round(this.currentAmount * 0.03); // 3% admin fee
   }
   next();
 });

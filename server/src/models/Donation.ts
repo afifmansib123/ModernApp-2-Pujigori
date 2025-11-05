@@ -215,7 +215,7 @@ DonationSchema.index({ paymentStatus: 1, amount: -1 });
 // Pre-save middleware to calculate admin fee and net amount
 DonationSchema.pre('save', function(next) {
   if (this.isModified('amount')) {
-    this.adminFee = Math.round(this.amount * 0.05); // 5% admin fee
+    this.adminFee = Math.round(this.amount * 0.03); // 3% admin fee
     this.netAmount = this.amount - this.adminFee;
   }
   next();

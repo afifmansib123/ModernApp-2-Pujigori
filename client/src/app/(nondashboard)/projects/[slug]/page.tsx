@@ -823,15 +823,15 @@ export default function ProjectDetailPage() {
                 </span>
               </div>
               <div className="flex justify-between text-sm">
-                <span>Admin Fee (5%):</span>
+                <span>Admin Fee (3%):</span>
                 <span className="font-medium">
-                  BDT {Math.round(paymentForm.amount * 0.05).toLocaleString()}
+                  BDT {Math.round(paymentForm.amount * 0.03).toLocaleString()}
                 </span>
               </div>
               <div className="flex justify-between text-sm">
                 <span>Project Receives:</span>
                 <span className="font-medium text-green-600">
-                  BDT {Math.round(paymentForm.amount * 0.95).toLocaleString()}
+                  BDT {Math.round(paymentForm.amount * 0.97).toLocaleString()}
                 </span>
               </div>
             </div>

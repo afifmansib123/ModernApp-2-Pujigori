@@ -210,10 +210,10 @@ export class CurrencyUtils {
   }
 
   /**
-   * Calculate admin fee (5%)
+   * Calculate admin fee (3%)
    */
   static calculateAdminFee(amount: number): number {
-    return Math.round(amount * 0.05);
+    return Math.round(amount * 0.03);
   }
 }
 

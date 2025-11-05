@@ -82,8 +82,8 @@ export default function ProjectManagementPage({
     ? (project.currentAmount / project.targetAmount) * 100 
     : 0;
   
-  // Calculate net amount (95% of current amount after 5% admin fee)
-  const netAmount = Math.round((project.currentAmount || 0) * 0.95);
+  // Calculate net amount (97% of current amount after 3% admin fee)
+  const netAmount = Math.round((project.currentAmount || 0) * 0.97);
   const adminFee = (project.currentAmount || 0) - netAmount;
 
   return (
@@ -165,7 +165,7 @@ export default function ProjectManagementPage({
                   BDT {netAmount.toLocaleString()}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  After 5% fee (BDT {adminFee.toLocaleString()})
+                  After 3% fee (BDT {adminFee.toLocaleString()})
                 </p>
               </div>
             </div>

@@ -142,7 +142,7 @@ async initiatePayment(
 
     // ✅ Calculate amounts BEFORE creating donation
     const donationAmount = sslCommerzService.formatAmount(amount);
-    const adminFee = Math.round(donationAmount * 0.05);
+    const adminFee = Math.round(donationAmount * 0.03);
     const netAmount = donationAmount - adminFee;
 
     console.log('Amount breakdown:', {

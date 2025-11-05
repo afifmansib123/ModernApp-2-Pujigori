@@ -78,7 +78,7 @@ export interface IProject extends Document {
   category: ProjectCategory;
   targetAmount: number; // in BDT
   currentAmount: number; // in BDT
-  adminFeeAmount: number; // 5% of total raised
+  adminFeeAmount: number; // 3% of total raised
   backerCount: number;
   startDate: Date;
   endDate: Date;
